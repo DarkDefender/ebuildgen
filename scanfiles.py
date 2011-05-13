@@ -3,7 +3,8 @@ import glob
 from ply import lex
 from ply import yacc
 
-needed_hfiles = {}
+global_hfiles = set()
+local_hfiles = set()
 
 def scandir(dir, filetype):
     files = []
@@ -26,7 +27,8 @@ with open("test.h", encoding="utf-8") as inputfile:
 tokens = (
         "INCLUDE",
         "GLOBH",
-        "LOCALH"
+        "LOCALH",
+        "BUNDLEINC"
         )
 
 t_ignore = " \t"
@@ -40,11 +42,17 @@ def t_INCLUDE(t):
     return t
 
 def t_GLOBH(t):
-    r"<.*>"
+    r"<.*\.h>"
+    t.value = t.value[1:-1] #strip <>
     return t
 
 def t_LOCALH(t):
-    r"\".*\""
+    r"\".*\.h\""
+    t.value = t.value[1:-1] #strip ""
+    return t
+
+def t_BUNDLEINC(t): #for <string> etc.
+    r"<.*>"
     return t
 
 def t_error(t):
@@ -53,7 +61,38 @@ def t_error(t):
 
 lexer = lex.lex()
 
-lexer.input(input_string)
+#lexer.input(input_string)
+#
+#for tok in lexer:
+#    print(tok)
+#
+#YACC stuff here
 
-for tok in lexer:
-    print(tok)
+def p_includes2(p):
+    """
+    includes : includes ginc
+             | includes linc
+    """
+
+def p_includes(p):
+    """
+    includes : ginc
+             | linc
+    """
+
+def p_ginclude(p):
+    "ginc : INCLUDE GLOBH"
+    needed_hfiles.add(p[2])
+
+def p_linclide(p):
+    "linc : INCLUDE LOCALH"
+    needed_hfiles.add(p[2])
+
+def p_error(p):
+    #print("syntax error at '%s'" % p.value)
+    pass
+
+yacc.yacc()
+
+print(yacc.parse(input_string))
+print(needed_hfiles)
