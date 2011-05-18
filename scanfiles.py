@@ -3,22 +3,21 @@ import glob
 from ply import lex
 from ply import yacc
 
-global_hfiles = set()
-local_hfiles = set()
-
-def scandir(dir, filetype):
+def scandir(dir, filetypes):
     files = []
     dirs = [f for f in os.listdir(dir)
         if os.path.isdir(os.path.join(dir, f))]
     for dir_path in dirs:
-        files += scandir(dir + "/" + dir_path, filetype)
-    return files + glob.glob(dir + "/*" + filetype)
+        files += scandir(dir + "/" + dir_path, filetypes)
+    for filetype in filetypes:
+        files += glob.glob(dir + "/*" + filetype)
+    return files
 
 #print(scandir("/home/zed/Desktop/test/smw/", ".cpp"))
 
 #lex stuff begins here
 
-def scanincludes(string):
+def scanincludes(string,global_hfiles,local_hfiles):
     tokens = (
             "INCLUDE",
             "GLOBH",
@@ -90,14 +89,18 @@ def scanincludes(string):
     yacc.yacc()
 
     yacc.parse(string)
+    return(global_hfiles,local_hfiles)
 
-input_string = ""
 
-for file in scandir("/home/zed/Desktop/test/smw/", ".h"):
-    print(file)
+def startscan(dir,filetypes):
+    global_hfiles = set()
+    local_hfiles = set()
 
-    with open(file, encoding="utf-8", errors="replace") as inputfile:
-        scanincludes(inputfile.read())
+    for file in scandir(dir, filetypes):
+        #print(file)
 
-print(global_hfiles)
-print(local_hfiles)
+        with open(file, encoding="utf-8", errors="replace") as inputfile:
+            (global_hfiles,local_hfiles) = scanincludes(inputfile.read(),global_hfiles,local_hfiles)
+
+    return(global_hfiles,local_hfiles)
+
