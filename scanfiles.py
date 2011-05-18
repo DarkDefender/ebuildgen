@@ -13,8 +13,6 @@ def scandir(dir, filetypes):
         files += glob.glob(dir + "/*" + filetype)
     return files
 
-#print(scandir("/home/zed/Desktop/test/smw/", ".cpp"))
-
 #lex stuff begins here
 
 def scanincludes(string,global_hfiles,local_hfiles):
@@ -28,7 +26,11 @@ def scanincludes(string,global_hfiles,local_hfiles):
     t_ignore = " \t"
 
     def t_comment(t):
-        r'(/\*(.|\n)*\*/)|(//.*)'
+        r"(/\*(.|\n)*\*/)|(//.*)"
+        pass
+
+    def t_if0(t):
+        r"\#if[ \t]+0(.|\n)*\#endif"
         pass
 
     def t_INCLUDE(t):
