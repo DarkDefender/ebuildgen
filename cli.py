@@ -1,7 +1,9 @@
 import argparse
 import scanfiles
 
-parser = argparse.ArgumentParser(description="Scan dir for files")
+parser = argparse.ArgumentParser(
+        description="Scan a dir for files",
+        epilog="Example: cli.py ~/my/project -t .c .h")
 
 parser.add_argument("dir")
 parser.add_argument("-t", "--types", metavar="filetype", nargs="+",
