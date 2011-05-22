@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("dir")
 parser.add_argument("-t", "--types", metavar="filetype", nargs="+",
+                    default=[".c",".cpp",".h"],
                     help="what filetypes it should scan")
 
 args = parser.parse_args()
