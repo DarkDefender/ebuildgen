@@ -23,15 +23,42 @@ def scanincludes(string,global_hfiles,local_hfiles):
             "BUNDLEINC"
             )
 
-    t_ignore = " \t"
+    states = (
+            ("com","exclusive"), #comment
+            ("ifdef","inclusive"),
+            )
 
-    def t_comment(t):
-        r"(/\*(.|\n)*\*/)|(//.*)"
+    t_ANY_ignore = " \t"
+
+    def t_begin_com(t):
+        r"/\*"
+        t.lexer.push_state("com")
+
+    def t_com_end(t):
+        r"\*/"
+        t.lexer.pop_state()
         pass
 
-    def t_if0(t):
-        r"\#if[ \t]+0(.|\n)*\#endif"
+    def t_line_com(t):
+        r"//.*"
         pass
+
+    def t_ANY_begin_if0(t):
+        r"\#if[ \t]+0"
+        t.lexer.push_state("com")
+
+    def t_com_endif(t):
+        r"\#endif"
+        t.lexer.pop_state()
+        pass
+
+    def t_ANY_ifdef(t):
+        r"\#ifdef"
+        t.lexer.push_state("ifdef")
+
+    def t_ifdef_endif(t):
+        r"\#endif"
+        t.lexer.pop_state()
 
     def t_INCLUDE(t):
         r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee]"
@@ -51,13 +78,13 @@ def scanincludes(string,global_hfiles,local_hfiles):
         r"<.*>"
         return t
 
-    def t_error(t):
+    def t_ANY_error(t):
         #print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
 
     lexer = lex.lex()
 
-    #lexer.input(input_string)
+    #lexer.input(string)
     #
     #for tok in lexer:
     #    print(tok)
@@ -99,7 +126,7 @@ def startscan(dir,filetypes):
     local_hfiles = set()
 
     for file in scandir(dir, filetypes):
-        #print(file)
+        print(file)
 
         with open(file, encoding="utf-8", errors="replace") as inputfile:
             (global_hfiles,local_hfiles) = scanincludes(inputfile.read(),global_hfiles,local_hfiles)

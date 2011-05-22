@@ -9,7 +9,7 @@ parser.add_argument("dir")
 parser.add_argument("-t", "--types", metavar="filetype", nargs="+",
                     default=[".c",".cpp",".h"],
                     help="what filetypes it should scan")
-parser.add_argument("-g", "--ginc", action="store_true", default=True,
+parser.add_argument("-g", "--ginc", action="store_true",
                     help="print global includes")
 parser.add_argument("-l", "--linc", action="store_true",
                     help="print local includes")

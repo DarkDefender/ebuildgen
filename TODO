@@ -1,2 +1,2 @@
 Fix issues with UTF-8 encoded filenames
-Handle if in if for parsing
+Handle #ifdef, #IFDEF, #IF 0 etc
