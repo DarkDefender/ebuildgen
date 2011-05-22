@@ -2,7 +2,7 @@ import argparse
 import scanfiles
 
 parser = argparse.ArgumentParser(
-        description="Scan a dir for files",
+        description="Scan a dir for files and output two lists with global and local includes",
         epilog="Example: cli.py ~/my/project -t .c .h")
 
 parser.add_argument("dir")
