@@ -15,7 +15,7 @@ def scandir(dir, filetypes):
 
 #lex stuff begins here
 
-def scanincludes(string,global_hfiles,local_hfiles):
+def scanincludes(string,inclst):
     tokens = (
             "INCLUDE",
             "GLOBH",
@@ -58,7 +58,7 @@ def scanincludes(string,global_hfiles,local_hfiles):
         r"\#ifdef"
         t.lexer.push_state("com")
 
-    def t_begin_IFDEF(t):
+    def t_IFDEF(t):
         r"\#ifdef[ \t]+[a-zA-Z_][a-zA-Z0-9_]*"
         t.value = t.value[6:].strip() #return the ifdef name
         t.lexer.push_state("ifdef")
@@ -104,41 +104,48 @@ def scanincludes(string,global_hfiles,local_hfiles):
         """
         includes : includes ginc
                  | includes linc
+                 | includes buninc
+                 | includes IFDEF includes ENDIF
         """
 
     def p_includes(p):
         """
         includes : ginc
                  | linc
+                 | buninc
         """
 
     def p_ginclude(p):
         "ginc : INCLUDE GLOBH"
-        global_hfiles.add(p[2])
+        inclst[0].add(p[2])
 
-    def p_linclide(p):
+    def p_linclude(p):
         "linc : INCLUDE LOCALH"
-        local_hfiles.add(p[2])
+        inclst[1].add(p[2])
+
+    def p_bununclude(p):
+        "buninc : INCLUDE BUNDLEINC"
 
     def p_error(p):
-        #print("syntax error at '%s'" % p.value)
+        print("syntax error at '%s'" % p.value)
         pass
 
     yacc.yacc()
 
     yacc.parse(string)
-    return(global_hfiles,local_hfiles)
+    return(inclst)
 
 
 def startscan(dir,filetypes):
     global_hfiles = set()
     local_hfiles = set()
+    inclst = [global_hfiles,local_hfiles]
 
     for file in scandir(dir, filetypes):
         print(file)
 
         with open(file, encoding="utf-8", errors="replace") as inputfile:
-            (global_hfiles,local_hfiles) = scanincludes(inputfile.read(),global_hfiles,local_hfiles)
+            inclst = scanincludes(inputfile.read(),inclst)
 
-    return(global_hfiles,local_hfiles)
+    return(inclst)
 

@@ -19,9 +19,11 @@ args = parser.parse_args()
 #print(args.dir)
 #print(args.types)
 
-(globinc,localinc) = scanfiles.startscan(args.dir,args.types)
+#inclst is a list of includes. First in it is global then local.
+
+inclst = scanfiles.startscan(args.dir,args.types)
 
 if args.ginc:
-    print(globinc)
+    print(inclst[0])
 if args.linc:
-    print(localinc)
+    print(inclst[1])

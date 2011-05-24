@@ -1,16 +1,16 @@
 
-#include    <1.h>
+#include    <glob1.h>
 #include <io>
-#include <2.h>
-#include "3.h"
+#include <glob2.h>
+#include "loc1.h"
 /*
 #include "comment.h"
 sdasdasdasd */
 // #include "linecom.h"
-#include "notlast.h"
+#include "loc2.h"
 #include <strings>
 /* ok... */
-#include <3.h>
+#include <glob3.h>
 
 #if                 0
  #if 0
@@ -23,4 +23,4 @@ sdasdasdasd */
     #include <sound.h>
 #endif
 
-#include "last.h"
+#include "loc3.h"
