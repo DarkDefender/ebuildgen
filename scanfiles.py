@@ -118,7 +118,7 @@ def scanincludes(string,inclst):
         inclst[1].add(p[1])
 
     def p_error(p):
-        print("syntax error at '%s'" % p.value)
+        #print("syntax error at '%s'" % p.type)
         pass
 
     yacc.yacc()
