@@ -17,9 +17,8 @@ def scandir(dir, filetypes):
 
 def scanincludes(string,inclst):
     tokens = (
-            "INCLUDE",
-            "GLOBH",
-            "LOCALH",
+            "GINCLUDE",
+            "LINCLUDE",
             "BUNDLEINC",
             "IFDEF",
             "ENDIF",
@@ -69,23 +68,19 @@ def scanincludes(string,inclst):
         t.lexer.pop_state()
         return t
 
-    def t_INCLUDE(t):
-        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee]"
+    def t_GINCLUDE(t):
+        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+<.*\.h>"
+        t.value = t.value[8:].strip().strip("<>")
         return t
 
-    def t_GLOBH(t):
-        r"<.*\.h>"
-        t.value = t.value[1:-1] #strip <>
+    def t_LINCLUDE(t):
+        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+\".*\.h\""
+        t.value = t.value[8:].strip().strip('""')
         return t
 
-    def t_LOCALH(t):
-        r"\".*\.h\""
-        t.value = t.value[1:-1] #strip ""
-        return t
-
-    def t_BUNDLEINC(t): #for <string> etc.
-        r"<.*>"
-        return t
+    def t_BUNDLEINC(t):
+        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+<.*>"
+        pass
 
     def t_ANY_error(t):
         #print("Illegal character '%s'" % t.value[0])
@@ -104,27 +99,23 @@ def scanincludes(string,inclst):
         """
         includes : includes ginc
                  | includes linc
-                 | includes buninc
                  | includes IFDEF includes ENDIF
+                 | IFDEF includes ENDIF
         """
 
     def p_includes(p):
         """
         includes : ginc
                  | linc
-                 | buninc
         """
 
     def p_ginclude(p):
-        "ginc : INCLUDE GLOBH"
-        inclst[0].add(p[2])
+        "ginc : GINCLUDE"
+        inclst[0].add(p[1])
 
     def p_linclude(p):
-        "linc : INCLUDE LOCALH"
-        inclst[1].add(p[2])
-
-    def p_bununclude(p):
-        "buninc : INCLUDE BUNDLEINC"
+        "linc : LINCLUDE"
+        inclst[1].add(p[1])
 
     def p_error(p):
         print("syntax error at '%s'" % p.value)
