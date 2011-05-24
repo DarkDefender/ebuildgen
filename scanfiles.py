@@ -20,7 +20,9 @@ def scanincludes(string,global_hfiles,local_hfiles):
             "INCLUDE",
             "GLOBH",
             "LOCALH",
-            "BUNDLEINC"
+            "BUNDLEINC",
+            "IFDEF",
+            "ENDIF",
             )
 
     states = (
@@ -52,13 +54,20 @@ def scanincludes(string,global_hfiles,local_hfiles):
         t.lexer.pop_state()
         pass
 
-    def t_ANY_ifdef(t):
+    def t_com_ifdef(t):
         r"\#ifdef"
-        t.lexer.push_state("ifdef")
+        t.lexer.push_state("com")
 
-    def t_ifdef_endif(t):
+    def t_begin_IFDEF(t):
+        r"\#ifdef[ \t]+[a-zA-Z_][a-zA-Z0-9_]*"
+        t.value = t.value[6:].strip() #return the ifdef name
+        t.lexer.push_state("ifdef")
+        return t
+
+    def t_ifdef_ENDIF(t):
         r"\#endif"
         t.lexer.pop_state()
+        return t
 
     def t_INCLUDE(t):
         r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee]"

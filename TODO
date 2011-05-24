@@ -1,2 +1,3 @@
 Fix issues with UTF-8 encoded filenames
 Handle #ifdef, #IFDEF, #IF 0 etc
+Handle "# include"
