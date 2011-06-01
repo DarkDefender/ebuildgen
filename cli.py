@@ -13,6 +13,8 @@ parser.add_argument("-g", "--ginc", action="store_true",
                     help="print global includes")
 parser.add_argument("-l", "--linc", action="store_true",
                     help="print local includes")
+parser.add_argument("-d", "--ifdef", action="store_true",
+                    help="print includes the depends on ifdefs")
 
 args = parser.parse_args()
 
@@ -23,7 +25,15 @@ args = parser.parse_args()
 
 inclst = scanfiles.startscan(args.dir,args.types)
 
+print(inclst)
+
 if args.ginc:
     print(inclst[0])
 if args.linc:
     print(inclst[1])
+
+if args.ifdef:
+    for name in inclst[2]:
+        print(name)
+        print(inclst[2][name][0])
+        print(inclst[2][name][1])

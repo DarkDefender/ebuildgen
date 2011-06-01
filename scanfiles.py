@@ -149,6 +149,9 @@ def scanincludes(string,inclst):
     yacc.yacc()
 
     newinclst = yacc.parse(string)
+    if newinclst == None:
+        #Check if the file didn't have any includes
+        return(inclst)
     newinclst = addnewincludes(newinclst,inclst)
     return(newinclst)
 
