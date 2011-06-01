@@ -114,12 +114,10 @@ def scanincludes(string,inclst):
         includes : includes IFDEF includes ENDIF
                  | IFDEF includes ENDIF
         """
-        print("found ifdef!")
         if len(p) == 5:
             p[1][2] = addnewifdefs(p[1][2],{p[2] : p[3]})
             p[0] = p[1]
         else:
-            print("ifdef before any includes!")
             ifdef = {}
             ifdef[p[1]] = p[2]
             p[0] = [set(),set(),ifdef]
@@ -150,13 +148,15 @@ def scanincludes(string,inclst):
 
     yacc.yacc()
 
-    print(yacc.parse(string))
-    return(inclst)
+    newinclst = yacc.parse(string)
+    newinclst = addnewincludes(newinclst,inclst)
+    return(newinclst)
 
 def addnewincludes(inclist1,inclist2):
     #come up with better names!!
     inclist1[0] = inclist1[0] | inclist2[0]
     inclist1[1] = inclist1[1] | inclist2[1]
+    inclist1[2] = addnewifdefs(inclist1[2],inclist2[2])
     return(inclist1)
 
 def addnewifdefs(dict1,dict2):
@@ -179,7 +179,7 @@ def addnewifdefs(dict1,dict2):
 def startscan(dir,filetypes):
     global_hfiles = set()
     local_hfiles = set()
-    inclst = [global_hfiles,local_hfiles]
+    inclst = [global_hfiles,local_hfiles,{}]
 
     for file in scandir(dir, filetypes):
         print(file)
