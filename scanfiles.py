@@ -116,12 +116,7 @@ def scanincludes(string,inclst):
         """
         print("found ifdef!")
         if len(p) == 5:
-            if p[2] in p[1][2]:
-                p[1][2][p[2]][0] = p[1][2][p[2]][0] | p[3][0]
-                p[1][2][p[2]][1] = p[1][2][p[2]][1] | p[3][1]
-            else:
-                p[1][2][p[2]] = p[3]
-
+            p[1][2] = addnewifdefs(p[1][2],{p[2] : p[3]})
             p[0] = p[1]
         else:
             print("ifdef before any includes!")
@@ -158,6 +153,28 @@ def scanincludes(string,inclst):
     print(yacc.parse(string))
     return(inclst)
 
+def addnewincludes(inclist1,inclist2):
+    #come up with better names!!
+    inclist1[0] = inclist1[0] | inclist2[0]
+    inclist1[1] = inclist1[1] | inclist2[1]
+    return(inclist1)
+
+def addnewifdefs(dict1,dict2):
+    if dict1 == {} and dict2 == {}:
+        #we are done here
+        return(dict())
+    dups = dict1.keys() & dict2.keys()
+    if dups == set():
+        #no duplicates, empty set()
+        for name in dict2:
+            dict1[name] = dict2[name]
+        return(dict1)
+
+    for name in dups:
+        dict1[name][0] = dict1[name][0] | dict2[name][0]
+        dict1[name][1] = dict1[name][1] | dict2[name][1]
+        dict1[name][2] = addnewifdefs(dict1[name][2],dict2[name][2])
+    return(dict1)
 
 def startscan(dir,filetypes):
     global_hfiles = set()

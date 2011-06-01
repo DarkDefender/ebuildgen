@@ -1,3 +1,6 @@
+#ifdef IFDEF1
+    #include "ifdef1.h"
+#endif
 
 #include    <glob1.h>
 #include <io>
@@ -19,8 +22,22 @@ sdasdasdasd */
 #include <if0_wrong.h>
 #endif
 
-#ifdef SOUND
-    #include <sound.h>
+#ifdef IFDEF2
+    #include <ifdef2.h>
 #endif
 
 #include "loc3.h"
+
+#ifdef IFDEF2
+    #include <ifdef2.h>
+    #ifdef IFDEF3
+        #include "ifdef3.h"
+    #endif
+    #include "ifdef2.h"
+#endif
+
+#ifdef IFDEF2
+    #ifdef IFDEF3
+        #include <ifdef3.h>
+    #endif
+#endif
