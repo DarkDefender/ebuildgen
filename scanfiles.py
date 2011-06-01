@@ -98,24 +98,56 @@ def scanincludes(string,inclst):
     def p_includes2(p):
         """
         includes : includes ginc
-                 | includes linc
-                 | includes IFDEF includes ENDIF
+        """
+        p[1][0].add(p[2])
+        p[0] = p[1]
+
+    def p_lincludes(p):
+        """
+        includes : includes linc
+        """
+        p[1][1].add(p[2])
+        p[0] = p[1]
+
+    def p_ifdef(p):
+        """
+        includes : includes IFDEF includes ENDIF
                  | IFDEF includes ENDIF
         """
+        print("found ifdef!")
+        if len(p) == 5:
+            if p[2] in p[1][2]:
+                p[1][2][p[2]][0] = p[1][2][p[2]][0] | p[3][0]
+                p[1][2][p[2]][1] = p[1][2][p[2]][1] | p[3][1]
+            else:
+                p[1][2][p[2]] = p[3]
 
-    def p_includes(p):
-        """
-        includes : ginc
-                 | linc
-        """
+            p[0] = p[1]
+        else:
+            print("ifdef before any includes!")
+            ifdef = {}
+            ifdef[p[1]] = p[2]
+            p[0] = [set(),set(),ifdef]
+
+    def p_ginc(p):
+        "includes : ginc"
+        globinc = set()
+        globinc.add(p[1])
+        p[0] = [globinc,set(),{}]
+
+    def p_linc(p):
+        "includes : linc"
+        locinc = set()
+        locinc.add(p[1])
+        p[0] = [set(),locinc,{}]
 
     def p_ginclude(p):
         "ginc : GINCLUDE"
-        inclst[0].add(p[1])
+        p[0] = p[1]
 
     def p_linclude(p):
         "linc : LINCLUDE"
-        inclst[1].add(p[1])
+        p[0] = p[1]
 
     def p_error(p):
         #print("syntax error at '%s'" % p.type)
@@ -123,7 +155,7 @@ def scanincludes(string,inclst):
 
     yacc.yacc()
 
-    yacc.parse(string)
+    print(yacc.parse(string))
     return(inclst)
 
 

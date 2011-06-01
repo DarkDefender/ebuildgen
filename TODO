@@ -2,3 +2,5 @@ Fix issues with UTF-8 encoded filenames
 Handle #ifdef, #IFDEF, #IF 0 etc
 Handle "# include"
 implement ifndef
+#include "file.h" doesn't restict it to be a local include, add checks!
+Handle dlopen() "includes"
