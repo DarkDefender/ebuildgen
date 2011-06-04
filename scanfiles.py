@@ -15,7 +15,7 @@ def scandir(dir, filetypes):
 
 #lex stuff begins here
 
-def scanincludes(string,inclst):
+def scanincludes(string,inclst,curdir):
     tokens = (
             "GINCLUDE",
             "LINCLUDE",
@@ -106,7 +106,10 @@ def scanincludes(string,inclst):
         """
         includes : includes linc
         """
-        p[1][1].add(p[2])
+        if islocalinc(p[2],curdir):
+            p[1][1].add(p[2])
+        else:
+            p[1][0].add(p[2])
         p[0] = p[1]
 
     def p_ifdef(p):
@@ -132,7 +135,10 @@ def scanincludes(string,inclst):
         "includes : linc"
         locinc = set()
         locinc.add(p[1])
-        p[0] = [set(),locinc,{}]
+        if islocalinc(p[1], curdir):
+            p[0] = [set(),locinc,{}]
+        else:
+            p[0] = [locinc,set(),{}]
 
     def p_ginclude(p):
         "ginc : GINCLUDE"
@@ -154,6 +160,14 @@ def scanincludes(string,inclst):
         return(inclst)
     newinclst = addnewincludes(newinclst,inclst)
     return(newinclst)
+
+def islocalinc(inc, curdir):
+    print(inc)
+    if glob.glob(curdir + inc) == []:
+        return False
+    else:
+        return True
+
 
 def addnewincludes(inclist1,inclist2):
     #come up with better names!!
@@ -188,7 +202,7 @@ def startscan(dir,filetypes):
         print(file)
 
         with open(file, encoding="utf-8", errors="replace") as inputfile:
-            inclst = scanincludes(inputfile.read(),inclst)
+            inclst = scanincludes(inputfile.read(),inclst,os.path.split(file)[0])
 
     return(inclst)
 
