@@ -4,4 +4,5 @@ Handle "# include"
 implement ifndef
 #include "file.h" doesn't restict it to be a local include, add checks!
 Handle dlopen() "includes"
+Clean up the code so that stuff is more organized
 Perhaps multithread some stuff so the rest of the program doesn't have to wait for the parser to finish

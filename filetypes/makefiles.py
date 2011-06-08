@@ -1,4 +1,3 @@
-import os
 from ply import lex
 from ply import yacc
 
@@ -89,9 +88,9 @@ def scanmakefile(makefile):
 
     lexer = lex.lex()
 
-    lexer.input(makefile)
-    for tok in lexer:
-        print(tok)
+    #lexer.input(makefile)
+    #for tok in lexer:
+    #    print(tok)
 
 
     #YACC begins here
@@ -240,13 +239,9 @@ def scanmakefile(makefile):
 
     yacc.parse(makefile)
 
-    for target in targets:
-        print(target)
+    #for target in targets:
+    #    print(target)
     #print(variables)
 
-
-file = "/usr/portage/distfiles/svn-src/doneyet-read-only/trunk/Makefile"
-
-with open(file, encoding="utf-8", errors="replace") as inputfile:
-    scanmakefile(inputfile.read())
+    return targets
 
