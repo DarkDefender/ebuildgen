@@ -7,13 +7,15 @@ def scandirfor(dir, filetypes):
     files = []
     dirs = [f for f in os.listdir(dir)
         if os.path.isdir(os.path.join(dir, f))]
-    for dir_path in dirs:
-        files += scandir(dir + "/" + dir_path, filetypes)
     for filetype in filetypes:
         files += glob.glob(dir + "/*" + filetype)
+    for dir_path in dirs:
+        files += scandirfor(dir + "/" + dir_path, filetypes)
     return files
 
 def scanmakefiledeps(makefile):
+    curdir = os.path.split(makefile)[0] + "/"
+    makefile = openfile(makefile)
     filestoscan = []
     impfiles = [] #look for these files
     targets = scanmakefile(makefile)
@@ -29,8 +31,10 @@ def scanmakefiledeps(makefile):
         deps = newdeps
 
     #impfiles.sort()
-    #print(impfiles)
-    return impfiles
+    for impfile in impfiles:
+        filestoscan.append(curdir + impfile)
+    #print(filestoscan)
+    return filestoscan
 
 def scanfilelist(filelist):
     global_hfiles = set()
@@ -38,11 +42,25 @@ def scanfilelist(filelist):
     inclst = [global_hfiles,local_hfiles,{}]
 
     for file in filelist:
-        with open(file, encoding="utf-8", errors="replace") as inputfile:
-            inclst = scanincludes(inputfile.read(),inclst,os.path.split(file)[0])
+        filestring = openfile(file)
+        if not filestring == None:
+            inclst = scanincludes(filestring,inclst,os.path.split(file)[0])
 
     return(inclst)
 
-fle = "/usr/portage/distfiles/svn-src/doneyet-read-only/trunk/Makefile"
-with open(fle, encoding="utf-8", errors="replace") as inputfile:
-    scanmakefiledeps(inputfile.read())
+def scanproject(dir,projecttype):
+    if projecttype == "guess":
+        filestolookfor = ["Makefile","makefile"] #add more later
+    elif projecttype == "makefile":
+        filestolookfor = ["Makefile","makeifle"]
+
+    mfile = scandirfor(dir, filestolookfor)[0] #use first file found
+    print(mfile)
+    return scanfilelist(scanmakefiledeps(mfile))
+
+def openfile(file):
+    try:
+        with open(file, encoding="utf-8", errors="replace") as inputfile:
+            return inputfile.read()
+    except IOError:
+        print('cannot open', file)

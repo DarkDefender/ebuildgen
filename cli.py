@@ -25,9 +25,10 @@ args = parser.parse_args()
 
 #inclst is a list of includes. First in it is global then local.
 
-inclst = scanfiles.startscan(args.dir,args.types)
+inclst = scanfiles.scanproject(args.dir,"makefile")
 
-print(inclst)
+if args.ginc == args.linc == args.ifdef == False:
+    print(inclst)
 
 if args.ginc:
     print(inclst[0])

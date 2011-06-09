@@ -151,8 +151,7 @@ def scanincludes(string,inclst,curdir):
     return(newinclst)
 
 def islocalinc(inc, curdir):
-    print(inc)
-    if glob.glob(curdir + inc) == []:
+    if glob.glob(curdir + "/" + inc) == []:
         return False
     else:
         return True
