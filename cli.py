@@ -2,6 +2,7 @@
 
 import argparse
 import scanfiles
+import linkdeps
 
 parser = argparse.ArgumentParser(
         description="Scan a dir for files and output includes",
@@ -26,9 +27,13 @@ args = parser.parse_args()
 #inclst is a list of includes. First in it is global then local.
 
 inclst = scanfiles.scanproject(args.dir,"makefile")
+packages = []
+for dep in inclst[0]:
+    packages += linkdeps.deptopackage(dep)
 
 if args.ginc == args.linc == args.ifdef == False:
     print(inclst)
+    print(packages)
 
 if args.ginc:
     print(inclst[0])
