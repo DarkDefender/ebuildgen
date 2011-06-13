@@ -1,10 +1,13 @@
 from time import strftime
+from subprocess import getstatusoutput
 
 eclass = {
         "git" : "git",
         "svn" : "subversion",
         "hg"  : "mercurial",
         }
+
+arch = getstatusoutput("portageq envvar ARCH")[1]
 
 def genebuild(iuse,deps,dltype,adress,targets,binaries):
     installmethod = guessinstall(targets,binaries)
@@ -54,7 +57,7 @@ def outputebuild(iuse,deps,dltype,adress,installmethod):
             '',
             'LICENSE=""',
             'SLOT="0"',
-            'KEYWORDS=""'
+            'KEYWORDS="~' + arch + '"'
             ]
     iusestr = 'IUSE="'
     for flag in iuse:
