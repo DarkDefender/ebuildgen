@@ -3,6 +3,7 @@
 import argparse
 import scanfiles
 import linkdeps
+import ebuildgen
 
 parser = argparse.ArgumentParser(
         description="Scan a dir for files and output includes",
@@ -18,6 +19,8 @@ parser.add_argument("-l", "--linc", action="store_true",
                     help="print local includes")
 parser.add_argument("-d", "--ifdef", action="store_true",
                     help="print includes the depends on ifdefs")
+parser.add_argument("-q", "--quiet", action="store_true",
+                    help="don't print anything")  #this needs work...
 
 args = parser.parse_args()
 
@@ -26,12 +29,15 @@ args = parser.parse_args()
 
 #inclst is a list of includes. First in it is global then local.
 
-inclst = scanfiles.scanproject(args.dir,"makefile")
-packages = []
+(inclst,binaries,targets) = scanfiles.scanproject(args.dir,"makefile")
+packages = set()
+print(binaries)
 for dep in inclst[0]:
-    packages += linkdeps.deptopackage(dep)
+    packages.add(linkdeps.deptopackage(dep)[0])
 
-if args.ginc == args.linc == args.ifdef == False:
+ebuildgen.genebuild([],packages,"svn","http://doneyet.googlecode.com/svn/trunk",targets,binaries)
+
+if args.ginc == args.linc == args.ifdef == args.quiet == False:
     print(inclst)
     print(packages)
 

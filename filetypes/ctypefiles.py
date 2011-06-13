@@ -8,7 +8,7 @@ def scanincludes(string,inclst,curdir):
     tokens = (
             "GINCLUDE",
             "LINCLUDE",
-            "BUNDLEINC",
+            #"BUNDLEINC",
             "IFDEF",
             "ENDIF",
             )

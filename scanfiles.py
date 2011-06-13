@@ -16,6 +16,7 @@ def scandirfor(dir, filetypes):
 def scanmakefiledeps(makefile):
     curdir = os.path.split(makefile)[0] + "/"
     makefile = openfile(makefile)
+    binaries = set() #the binaries that the .o file create
     filestoscan = []
     impfiles = [] #look for these files
     targets = scanmakefile(makefile)
@@ -28,13 +29,15 @@ def scanmakefiledeps(makefile):
                     newdeps += target[1]
                     if ".o" in dep or dep in impfiles:
                         impfiles += target[1]
+                    elif ".o" in target[1][0]:
+                        binaries.add(target[0])
         deps = newdeps
 
     #impfiles.sort()
     for impfile in impfiles:
         filestoscan.append(curdir + impfile)
     #print(filestoscan)
-    return filestoscan
+    return filestoscan,binaries,targets
 
 def scanfilelist(filelist):
     global_hfiles = set()
@@ -56,7 +59,8 @@ def scanproject(dir,projecttype):
 
     mfile = scandirfor(dir, filestolookfor)[0] #use first file found
     print(mfile)
-    return scanfilelist(scanmakefiledeps(mfile))
+    (scanlist,binaries,targets) = scanmakefiledeps(mfile)
+    return scanfilelist(scanlist),binaries,targets
 
 def openfile(file):
     try:

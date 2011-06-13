@@ -8,3 +8,4 @@ Clean up the code so that stuff is more organized
 Perhaps multithread some stuff so the rest of the program doesn't have to wait for the parser to finish
 Handle deptopackage conversion where the dep is defined at root lever IE dep = /usr/map/file
 Handle ../map/%.type : %.type2 makefile targets
+Handle zip,tar for unpacking
