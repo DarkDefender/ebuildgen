@@ -4,6 +4,7 @@ import argparse
 import scanfiles
 import linkdeps
 import ebuildgen
+from scmprojects import getsourcecode
 
 parser = argparse.ArgumentParser(
         description="Scan a dir for files and output includes",
@@ -22,20 +23,42 @@ parser.add_argument("-d", "--ifdef", action="store_true",
 parser.add_argument("-q", "--quiet", action="store_true",
                     help="don't print anything")  #this needs work...
 
+parser.add_argument("--svn", action="store_true",
+                    help="this is a SVN project")
+parser.add_argument("--git", action="store_true",
+                    help="this is a GIT project")
+parser.add_argument("--hg", action="store_true",
+                    help="this is a HG project")
+
 args = parser.parse_args()
 
 #print(args.dir)
 #print(args.types)
 
 #inclst is a list of includes. First in it is global then local.
+if args.svn:
+    getsourcecode(args.dir,"svn")
+    srcdir = "/tmp/ebuildgen/curproj"
+    dltype = "svn"
+elif args.git:
+    getsourcecode(args.dir,"git")
+    srcdir = "/tmp/ebuildgen/curproj"
+    dltype = "git"
+elif args.hg:
+    getsourcecode(args.dir,"hg")
+    srcdir = "/tmp/ebuildgen/curproj"
+    dltype = "hg"
+else:
+    srcdir = args.dir
+    dltype = "www"
 
-(inclst,binaries,targets) = scanfiles.scanproject(args.dir,"makefile")
+(inclst,binaries,targets) = scanfiles.scanproject(srcdir,"makefile")
 packages = set()
 print(binaries)
 for dep in inclst[0]:
     packages.add(linkdeps.deptopackage(dep)[0])
 
-ebuildgen.genebuild([],packages,"svn","http://doneyet.googlecode.com/svn/trunk",targets,binaries)
+ebuildgen.genebuild([],packages,dltype,args.dir,targets,binaries)
 
 if args.ginc == args.linc == args.ifdef == args.quiet == False:
     print(inclst)
