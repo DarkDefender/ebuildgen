@@ -1,6 +1,6 @@
 from ply import lex
 from ply import yacc
-from makefilecom import com_interp
+from makefilecom import expand
 
 def scanmakefile(makefile):
     tokens = (
@@ -166,6 +166,8 @@ def scanmakefile(makefile):
     ivars = [] #keep track of the immediate variables
     targets = [] #buildtargets, [[target,deps,options],[target2,....
 
+    def p_target(p):
+
     def p_peq(p): #immediate if peq was defined as immediate before else deferred
         """
         end : end PEQ textlst end
@@ -264,17 +266,6 @@ def scanmakefile(makefile):
 #immediate
 #deferred
 
-def expand(lst):
-    newlst = []
-    for item in lst:
-        if isinstance(item, list):
-            newitem = com_interp(item[0])
-        else:
-            newitem = item
-
-        newlst += newitem
-
-    return newlst
 
 file="Makefile2"
 
