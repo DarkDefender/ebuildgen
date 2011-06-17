@@ -55,11 +55,11 @@ def com_interp(string,variables):
         r"[^\$\(\{\)\}]"
 
     def t_BEGINCOM(t):
-        r"\("
+        r"(\(|\{)"
         return t
 
     def t_ENDCOM(t):
-        r"\)"
+        r"(\)|\})"
         return t
 
     def t_PERCENT(t):
@@ -79,7 +79,7 @@ def com_interp(string,variables):
         return t
 
     def t_TEXT(t):
-        r"[^ \n\t:=\)\\\$,]+"
+        r"[^ \n\t:=\)\}\\\$,]+"
         return t
 
     def t_SPACE(t):
@@ -203,10 +203,6 @@ def com_interp(string,variables):
             p[0] = p[1] + com_interp(p[2],variables)[0]
         else:
             p[0] = com_interp(p[1],variables)[0]
-            #if len(com) == 1:
-            #    p[0] = com_interp(com[0],variables)
-            #else:
-            #    p[0] = expand(com,variables)
 
     def p_textstr(p):
         """
@@ -240,4 +236,4 @@ def com_interp(string,variables):
 
     return retlst
 
-print(com_interp("($(x)z:%=%.$(y))",{"x":["y"], "y":["z"], "yz":["u","v"]}))
+print(com_interp("($(${x}))",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))
