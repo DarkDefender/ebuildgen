@@ -44,13 +44,13 @@ def scanmakefile(makefile):
 
         # If closing command, return the code fragment
         if t.lexer.level == 0:
-             t.value = t.lexer.lexdata[t.lexer.code_start:t.lexer.lexpos-1]
+             t.value = t.lexer.lexdata[t.lexer.code_start-1:t.lexer.lexpos]
              t.type = "COMMAND"
              t.lexer.begin('INITIAL')
              return t
 
     def t_ccode_text(t):
-        "[^\$\(\{\)\}]"
+        r"[^\$\(\{\)\}]"
 
     def t_begin_com(t):
         r"\#"

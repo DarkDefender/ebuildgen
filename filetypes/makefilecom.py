@@ -20,6 +20,9 @@ def com_interp(string,variables):
             "EQ",
             "TEXT",
             "PERCENT",
+            "BEGINCOM",
+            "ENDCOM",
+            "SPACE",
             )
     states = (
             ("ccode", "exclusive"), #command code
@@ -43,13 +46,21 @@ def com_interp(string,variables):
 
         # If closing command, return the code fragment
         if t.lexer.level == 0:
-             t.value = t.lexer.lexdata[t.lexer.code_start:t.lexer.lexpos-1]
+             t.value = t.lexer.lexdata[t.lexer.code_start-1:t.lexer.lexpos]
              t.type = "COMMAND"
              t.lexer.begin('INITIAL')
              return t
 
     def t_ccode_text(t):
-        "[^\$\(\{\)\}]"
+        r"[^\$\(\{\)\}]"
+
+    def t_BEGINCOM(t):
+        r"\("
+        return t
+
+    def t_ENDCOM(t):
+        r"\)"
+        return t
 
     def t_PERCENT(t):
         r"\%"
@@ -63,17 +74,17 @@ def com_interp(string,variables):
         r","
         return t
 
-     def t_COL(t):
+    def t_COL(t):
         r":"
         return t
 
     def t_TEXT(t):
-        r"[^ \n\t:=\\,]+"
+        r"[^ \n\t:=\)\\\$,]+"
         return t
 
-    def t_spacetab(t):
+    def t_SPACE(t):
         r"[ \t]"
-        pass
+        return t
 
     def t_ANY_error(t):
         print("Illegal character '%s'" % t.value[0])
@@ -81,29 +92,33 @@ def com_interp(string,variables):
 
     lexer = lex.lex()
 
-    lexer.input(string)
+    #lexer.input(string)
     #for tok in lexer:
     #    print(tok)
 
-    tokens = []
-    for tok in lexer:
-        tokens += [tok.value]
-
-    if len(tokens) == 1:
-        if tokens[0] in variables:
-            return variables[tokens[0]]
-        else:
-            return []
 
     #YACC stuff begins here
 
+    def p_comp(p):
+        """
+        complst : BEGINCOM newstr ENDCOM
+        """
+        if len(p) == 4:
+            p[0] = p[2]
+        else:
+            p[0] = p[1]
+
+    def p_complst(p):
+        "complst : BEGINCOM textstr ENDCOM"
+        p[0] = variables[p[2]]
+
     def p_tonewstr(p):
         """
-        newstr  : getstr EQ TEXT PERCENT TEXT
-                | getstr EQ PERCENT TEXT
-                | getstr EQ TEXT PERCENT
+        newstr  : getstr EQ textstr PERCENT textstr
+                | getstr EQ PERCENT textstr
+                | getstr EQ textstr PERCENT
                 | getstr EQ PERCENT
-                | getstr EQ TEXT
+                | getstr EQ textstr
         """
         newtextlist = []
         if p[1] == []:
@@ -133,22 +148,22 @@ def com_interp(string,variables):
 
     def p_getstr(p):
         """
-        getstr : TEXT COL TEXT PERCENT TEXT
-               | TEXT COL PERCENT TEXT
-               | TEXT COL TEXT PERCENT
-               | TEXT COL PERCENT
-               | TEXT COL TEXT
+        getstr : textstr COL textstr PERCENT textstr
+               | textstr COL PERCENT textstr
+               | textstr COL textstr PERCENT
+               | textstr COL PERCENT
+               | textstr COL textstr
         """
         if not p[1] in variables:
             p[0] = []
         else:
-            textlst = expand(variables[p[1]]): #make sure it's expanded
+            textlst = expand(variables[p[1]],variables) #make sure it's expanded
             newtextlst = []
 
             if len(p) == 6:
                 l1 = len(p[3]) #length of str1
                 l2 = len(p[5])
-                for text in textlst
+                for text in textlst:
                     if p[3] == text[0:l1] and p[5] == text[-l2:]:
                         newtextlst.append(text[l1:-l2])
 
@@ -157,15 +172,15 @@ def com_interp(string,variables):
             elif len(p) == 5:
                 if p[3] == "%":
                     l1 = len(p[4])
-                    for text in textlst
-                        if p[4] == text[-l1:]
+                    for text in textlst:
+                        if p[4] == text[-l1:]:
                             newtextlst.append(text[:-l1])
 
                     p[0] = newtextlst
                 else:
                     l1 = len(p[3])
-                    for text in textlst
-                        if p[3] == text[0:l1]
+                    for text in textlst:
+                        if p[3] == text[0:l1]:
                             newtextlst.append(text[l1:])
 
                     p[0] = newtextlst
@@ -173,12 +188,56 @@ def com_interp(string,variables):
                 p[0] = textlst
             else:
                 l1 = len(p[3])
-                    for text in textlst
-                        if p[3] == text[-l1:]
-                            newtextlst.append(text[:-l1])
+                for text in textlst:
+                    if p[3] == text[-l1:]:
+                        newtextlst.append(text[:-l1])
 
-                    p[0] = newtextlst
+                p[0] = newtextlst
 
+    def p_command(p):
+        """
+        textstr : textstr COMMAND
+                | COMMAND
+        """
+        if len(p) == 3:
+            p[0] = p[1] + com_interp(p[2],variables)[0]
+        else:
+            p[0] = com_interp(p[1],variables)[0]
+            #if len(com) == 1:
+            #    p[0] = com_interp(com[0],variables)
+            #else:
+            #    p[0] = expand(com,variables)
 
+    def p_textstr(p):
+        """
+        textstr : textstr TEXT
+                | TEXT
+        """
+        if len(p) == 3:
+            p[0] = p[1] + p[2]
+        else:
+            p[0] = p[1]
 
-com_interp("HELOO",{"HELOO":["mupp"]})
+    def p_spacelst(p):
+        """
+        spacelst : spacelst SPACE
+                 | SPACE
+        """
+        if len(p) == 3:
+            p[0] = p[1] + [p[2]]
+        else:
+            p[0] = [p[1]]
+
+    def p_error(p):
+        print("syntax error at '%s'" % p.type,p.lexpos)
+        pass
+
+    yacc.yacc()
+
+    retlst = yacc.parse(string)
+
+    #print(retlst)
+
+    return retlst
+
+print(com_interp("($(x)z:%=%.$(y))",{"x":["y"], "y":["z"], "yz":["u","v"]}))
