@@ -79,7 +79,7 @@ def com_interp(string,variables):
         return t
 
     def t_TEXT(t):
-        r"[^ \n\t:=\)\}\\\$,]+"
+        r"[^ \n\t:=\)\}\(\}\\\$,]+"
         return t
 
     def t_SPACE(t):
@@ -113,11 +113,17 @@ def com_interp(string,variables):
         """
         complst : complst BEGINCOM textstr ENDCOM
                 | BEGINCOM textstr ENDCOM
+                | complst textstr
+                | textstr
         """
         if len(p) == 4:
             p[0] = expand(variables[p[2]],variables)
-        else:
+        elif len(p) == 5:
             p[0] = [p[1][0] + expand(variables[p[3]],variables)[0]]
+        elif len(p) == 3:
+            p[0] = [p[1][0] + p[2]]
+        else:
+            p[0] = [p[1]]
 
     def p_tonewstr(p):
         """
@@ -275,4 +281,4 @@ def com_interp(string,variables):
 
     return retlst
 
-#print(com_interp("(y$(y))",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))
+#print(com_interp("(y)y(y)",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))

@@ -84,14 +84,6 @@ def scanmakefile(makefile):
         r"\%"
         return t
 
-    def t_var_TEXT(t):
-        r"[^ \n\t\$\\,]+"
-        return t
-
-    def t_var_SPACE(t):
-        r"[ \t]"
-        return t
-
     def t_EQ(t):
         r"=[ \t]*"
         t.lexer.begin('var')
@@ -130,9 +122,9 @@ def scanmakefile(makefile):
         r","
         return t
 
-    def t_spacetab(t):
+    def t_SPACE(t):
         r"[ \t]"
-        pass
+        return t
 
     def t_ENDTAB(t):
         r"\n\t"
@@ -251,6 +243,7 @@ def scanmakefile(makefile):
         """
         end : end END
             | end spacestr END
+            | end spacestr
             | END
         """
 
