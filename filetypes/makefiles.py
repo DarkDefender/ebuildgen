@@ -3,9 +3,8 @@ from ply import yacc
 from makefilecom import expand
 
 def scanmakefile(makefile):
+    makefile = "\n" + makefile #Add \n so you can guess vars
     tokens = (
-            "VAR",
-            "DOTVAR",
             "END",
             "COL",
             "SEMICOL",
@@ -19,11 +18,13 @@ def scanmakefile(makefile):
             "ENDTAB",
             "LIT",
             "COMMA",
+            "SPACE",
             )
 
     states = (
             ("com", "exclusive"),
             ("ccode", "exclusive"), #command code
+            ("var", "inclusive"),
             )
 
     # Match the first $(. Enter ccode state.
@@ -31,7 +32,7 @@ def scanmakefile(makefile):
         r'\$(\{|\()'
         t.lexer.code_start = t.lexer.lexpos        # Record the starting position
         t.lexer.level = 1                          # Initial level
-        t.lexer.begin('ccode')                     # Enter 'ccode' state
+        t.lexer.push_state('ccode')                     # Enter 'ccode' state
 
     # Rules for the ccode state
     def t_ccode_newcom(t):
@@ -46,7 +47,7 @@ def scanmakefile(makefile):
         if t.lexer.level == 0:
              t.value = t.lexer.lexdata[t.lexer.code_start-1:t.lexer.lexpos]
              t.type = "COMMAND"
-             t.lexer.begin('INITIAL')
+             t.lexer.pop_state()
              return t
 
     def t_ccode_text(t):
@@ -71,14 +72,6 @@ def scanmakefile(makefile):
         t.lexer.lineno += 1
         return t
 
-    def t_EQ(t):
-        r"="
-        return t
-
-    def t_COL(t):
-        r":"
-        return t
-
     def t_SEMICOL(t):
         r";"
         return t
@@ -91,29 +84,32 @@ def scanmakefile(makefile):
         r"\%"
         return t
 
+    def t_var_TEXT(t):
+        r"[^ \n\t\$\\,]+"
+        return t
+
+    def t_var_SPACE(t):
+        r"[ \t]"
+        return t
+
+    def t_EQ(t):
+        r"=[ \t]*"
+        t.lexer.begin('var')
+        return t
+
     def t_PEQ(t):
-        r"[a-zA-Z_][a-zA-Z0-9_]*[ \t]*\+="
-        t.value = t.value.split()[0].rstrip("+=")
+        r"\+=[ \t]*"
+        t.lexer.begin('var')
         return t
 
     def t_CEQ(t):
-        r"[a-zA-Z_][a-zA-Z0-9_]*[ \t]*:="
-        t.value = t.value.split()[0].rstrip(":=")
+        r":=[ \t]*"
+        t.lexer.begin('var')
         return t
 
     def t_QEQ(t):
-        r"[a-zA-Z_][a-zA-Z0-9_]*[ \t]*\?="
-        t.value = t.value.split()[0].rstrip("?=")
-        return t
-
-    def t_VAR(t):
-        r"[a-zA-Z_][a-zA-Z0-9_]*[ \t]*="
-        t.value = t.value.split()[0].rstrip("=") #get the name of the var
-        return t
-
-    def t_DOTVAR(t):
-        r"\.[a-zA-Z_][a-zA-Z0-9_]*[ \t]*="
-        t.value = t.value.split()[0].rstrip("=") #get the name of the var
+        r"\?=[ \t]*"
+        t.lexer.begin('var')
         return t
 
     def t_contline(t):
@@ -124,6 +120,10 @@ def scanmakefile(makefile):
     def t_LIT(t):
         r"\\."
         t.value = t.value[1] #take the literal char
+        return t
+
+    def t_COL(t):
+        r":"
         return t
 
     def t_COMMA(t):
@@ -140,12 +140,13 @@ def scanmakefile(makefile):
         return t
 
     def t_TEXT(t):
-        r"[^ \n\t:\\,]+"
+        r"[^ \n\t:\?\+=\\,]+"
         return t
 
     def t_END(t):
         r"\n+"
         t.lexer.lineno += t.value.count('\n')
+        t.lexer.begin('INITIAL')
         return t
 
     def t_ANY_error(t):
@@ -166,95 +167,108 @@ def scanmakefile(makefile):
     ivars = [] #keep track of the immediate variables
     targets = [] #buildtargets, [[target,deps,options],[target2,....
 
-    def p_target(p):
-
     def p_peq(p): #immediate if peq was defined as immediate before else deferred
         """
-        end : end PEQ textlst end
-            | PEQ textlst end
+        end : end textstr PEQ textlst end
+            | end textstr PEQ end
         """
-        if len(p) == 4:
-            if not p[1] in variables:
-                variables[p[1]] = p[2]
-            elif not p[1] in ivars:
-                variables[p[1]] += p[2]
+        if len(p) == 6:
+            if not p[2] in variables:
+                variables[p[2]] = p[4]
+            elif not p[2] in ivars:
+                variables[p[2]] += p[4]
             else:
-                textvalue = expand(p[2]) #expand any variables
-                variables[p[1]] = textvalue
-
-        elif not p[2] in variables:
-            variables[p[2]] = p[3]
-        elif not p[2] in ivars:
-            variables[p[2]] += p[3]
-        else:
-            textvalue = expand(p[3]) #expand any variables
-            variables[p[2]] = textvalue
+                textvalue = expand(p[4],variables) #expand any variables
+                variables[p[2]] = textvalue
 
     def p_ceq(p): #immediate
         """
-        end : end CEQ textlst end
-            | CEQ textlst end
+        end : end textstr CEQ textlst end
+            | end textstr CEQ end
         """
-        if len(p) == 4:
-            textvalue = expand(p[2]) #expand any variables
-            variables[p[1]] = textvalue
-            ivars.append(p[1])
-        else:
-            textvalue = expand(p[3]) #expand any variables
+        if len(p) == 6:
+            print(p[4])
+            textvalue = expand(p[4],variables) #expand any variables
             variables[p[2]] = textvalue
+            ivars.append(p[2])
+        else:
+            variables[p[2]] = []
             ivars.append(p[2])
 
     def p_qeq(p): #deferred
         """
-        end : end QEQ textlst end
-            | QEQ textlst end
+        end : end textstr QEQ textlst end
+            | end textstr QEQ end
         """
-        if len(p) == 4 and not p[1] in variables:
-            variables[p[1]] = p[2]
-        elif not p[2] in variables:
-            variables[p[2]] = p[3]
+        if not p[2] in variables and len(p) == 6:
+            variables[p[2]] = p[4]
+        else:
+            variables[p[2]] = []
 
     def p_var(p): #deferred
         """
-        end : end VAR textlst end
-            | VAR textlst end
+        end : end textstr EQ textlst end
+            | end textstr EQ end
         """
-        if len(p) == 4:
-            variables[p[1]] = p[2]
+        if len(p) == 6:
+            variables[p[2]] = p[4]
         else:
-            variables[p[2]] = p[3]
+            variables[p[2]] = []
 
     def p_textlst(p):
         """
-        textlst : textlst TEXT
-                | textlst command
-                | textlst LIT
+        textlst : textlst spacestr command
+                | textlst spacestr textstr
                 | command
+                | textstr
+        """
+        if len(p) == 4:
+            p[0] = p[1]+ [p[3]]
+        else:
+            p[0] = [p[1]]
+
+    def p_textstr(p):
+        """
+        textstr : textstr LIT
                 | TEXT
                 | LIT
         """
         if len(p) == 3:
-            p[0] = p[1].append(p[2])
+            p[0] = p[1] + p[2]
         else:
-            p[0] = [p[1]]
+            p[0] = p[1]
 
     def p_command(p):
-        "command: COMMAND"
+        "command : COMMAND"
         p[0] = [p[1]] #commands are lists within the testlst
 
     def p_end(p):
         """
-        end : END
-            | end END
+        end : end END
+            | spacestr END
+            | END
         """
+
+    def p_space(p):
+        """
+        spacestr : spacestr SPACE
+                 | SPACE
+        """
+        if len(p) == 3:
+            p[0] = p[1] + p[2]
+        else:
+            p[0] = p[1]
+
 
     def p_error(p):
         print("syntax error at '%s'" % p.type,p.lexpos)
         pass
 
-    #yacc.yacc()
+    yacc.yacc()
 
-    #yacc.parse(makefile)
+    yacc.parse(makefile)
+
+    print(variables)
 
     #for target in targets:
     #    print(target)
@@ -267,7 +281,7 @@ def scanmakefile(makefile):
 #deferred
 
 
-file="Makefile2"
+file="Makefile"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
     scanmakefile(inputfile.read())

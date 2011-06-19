@@ -6,7 +6,7 @@ def expand(lst,variables):
     for item in lst:
         if isinstance(item, list):
             strlst = com_interp(item[0],variables)
-            netlst += expand(strlst,variables)
+            newlst += expand(strlst,variables)
         else:
             newlst.append(item)
 
@@ -110,7 +110,7 @@ def com_interp(string,variables):
 
     def p_complst(p):
         "complst : BEGINCOM textstr ENDCOM"
-        p[0] = variables[p[2]]
+        p[0] = expand(variables[p[2]],variables)
 
     def p_tonewstr(p):
         """
@@ -216,13 +216,13 @@ def com_interp(string,variables):
 
     def p_spacelst(p):
         """
-        spacelst : spacelst SPACE
+        spacestr : spacestr SPACE
                  | SPACE
         """
         if len(p) == 3:
-            p[0] = p[1] + [p[2]]
+            p[0] = p[1] + p[2]
         else:
-            p[0] = [p[1]]
+            p[0] = p[1]
 
     def p_error(p):
         print("syntax error at '%s'" % p.type,p.lexpos)
@@ -236,4 +236,4 @@ def com_interp(string,variables):
 
     return retlst
 
-print(com_interp("($(${x}))",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))
+print(com_interp("($($(x)))",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))

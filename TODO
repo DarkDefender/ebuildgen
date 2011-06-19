@@ -9,3 +9,4 @@ Perhaps multithread some stuff so the rest of the program doesn't have to wait f
 Handle deptopackage conversion where the dep is defined at root lever IE dep = /usr/map/file
 Handle ../map/%.type : %.type2 makefile targets
 Handle zip,tar for unpacking
+Handle $(foo)_test = ... variable assingment
