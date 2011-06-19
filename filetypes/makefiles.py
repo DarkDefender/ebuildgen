@@ -155,10 +155,9 @@ def scanmakefile(makefile):
 
     lexer = lex.lex()
 
-    lexer.input(makefile)
-    for tok in lexer:
-        print(tok)
-
+    #lexer.input(makefile)
+    #for tok in lexer:
+    #    print(tok)
 
     #YACC begins here
 
@@ -239,13 +238,19 @@ def scanmakefile(makefile):
             p[0] = p[1]
 
     def p_command(p):
-        "command : COMMAND"
-        p[0] = [p[1]] #commands are lists within the testlst
+        """
+        command : command COMMAND
+                | COMMAND
+        """
+        if len(p) == 2:
+            p[0] = [p[1]] #commands are lists within the testlst
+        else:
+            p[0] = [p[1][0] + p[2]]
 
     def p_end(p):
         """
         end : end END
-            | spacestr END
+            | end spacestr END
             | END
         """
 
@@ -261,7 +266,7 @@ def scanmakefile(makefile):
 
 
     def p_error(p):
-        print("syntax error at '%s'" % p.type,p.lexpos)
+        print("syntax error at '%s'" % p.type,p.lineno)
         pass
 
     yacc.yacc()

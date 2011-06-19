@@ -102,6 +102,7 @@ def com_interp(string,variables):
     def p_comp(p):
         """
         complst : BEGINCOM newstr ENDCOM
+                | func
         """
         if len(p) == 4:
             p[0] = p[2]
@@ -109,8 +110,14 @@ def com_interp(string,variables):
             p[0] = p[1]
 
     def p_complst(p):
-        "complst : BEGINCOM textstr ENDCOM"
-        p[0] = expand(variables[p[2]],variables)
+        """
+        complst : complst BEGINCOM textstr ENDCOM
+                | BEGINCOM textstr ENDCOM
+        """
+        if len(p) == 4:
+            p[0] = expand(variables[p[2]],variables)
+        else:
+            p[0] = [p[1][0] + expand(variables[p[3]],variables)[0]]
 
     def p_tonewstr(p):
         """
@@ -194,6 +201,38 @@ def com_interp(string,variables):
 
                 p[0] = newtextlst
 
+    def p_func(p):
+        """
+        func : BEGINCOM textstr SPACE funcinput
+        """
+        result = "This calls a function"
+        #result = funcexe(p[2],p[4])
+        p[0] = result
+
+    def p_funcinput(p):
+        """
+        funcinput : funcinput inputstr COMMA
+                  | funcinput inputstr ENDCOM
+                  | inputstr COMMA
+                  | inputstr ENDCOM
+        """
+        if len(p) == 4:
+            p[0] = p[1].append(p[2])
+        else:
+            p[0] = [p[1]]
+
+    def p_inputstr(p):
+        """
+        inputstr : inputstr spacestr
+                 | inputstr textstr
+                 | spacestr
+                 | textstr
+        """
+        if len(p) == 3:
+            p[0] = p[1] + p[2]
+        else:
+            p[0] = p[1]
+
     def p_command(p):
         """
         textstr : textstr COMMAND
@@ -214,7 +253,7 @@ def com_interp(string,variables):
         else:
             p[0] = p[1]
 
-    def p_spacelst(p):
+    def p_spacestr(p):
         """
         spacestr : spacestr SPACE
                  | SPACE
@@ -236,4 +275,4 @@ def com_interp(string,variables):
 
     return retlst
 
-print(com_interp("($($(x)))",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))
+#print(com_interp("(y$(y))",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))
