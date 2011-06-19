@@ -211,7 +211,7 @@ def com_interp(string,variables):
         """
         func : BEGINCOM textstr SPACE funcinput
         """
-        result = "This calls a function"
+        result = ["This calls a function"]
         #result = funcexe(p[2],p[4])
         p[0] = result
 

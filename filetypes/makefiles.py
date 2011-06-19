@@ -58,7 +58,11 @@ def scanmakefile(makefile):
         t.lexer.push_state("com")
 
     def t_com_other(t):
-        r"[^(\n|\\)]+"
+        r"[^\\\n]+"
+        pass
+
+    def t_com_lit(t):
+        r"\\."
         pass
 
     def t_com_newline(t):
@@ -85,23 +89,23 @@ def scanmakefile(makefile):
         return t
 
     def t_EQ(t):
-        r"=[ \t]*"
-        t.lexer.begin('var')
+        r"[ \t]*=[ \t]*"
+        t.lexer.begin("var")
         return t
 
     def t_PEQ(t):
-        r"\+=[ \t]*"
-        t.lexer.begin('var')
+        r"[ \t]*\+=[ \t]*"
+        t.lexer.begin("var")
         return t
 
     def t_CEQ(t):
-        r":=[ \t]*"
-        t.lexer.begin('var')
+        r"[ \t]*:=[ \t]*"
+        t.lexer.begin("var")
         return t
 
     def t_QEQ(t):
-        r"\?=[ \t]*"
-        t.lexer.begin('var')
+        r"[ \t]*\?=[ \t]*"
+        t.lexer.begin("var")
         return t
 
     def t_contline(t):
@@ -131,8 +135,12 @@ def scanmakefile(makefile):
         t.lexer.lineno += 1
         return t
 
+    def t_var_TEXT(t):
+        r"[^ \n\t,\$\\]+"
+        return t
+
     def t_TEXT(t):
-        r"[^ \n\t:\?\+=\\,]+"
+        r"[^ \n\t:\?\+=\\,\$]+"
         return t
 
     def t_END(t):
@@ -158,12 +166,19 @@ def scanmakefile(makefile):
     ivars = [] #keep track of the immediate variables
     targets = [] #buildtargets, [[target,deps,options],[target2,....
 
+    def p_testvar(p):
+        """
+        compvar : compvar var
+                | compvar end
+                | var
+        """
+
     def p_peq(p): #immediate if peq was defined as immediate before else deferred
         """
-        end : end textstr PEQ textlst end
-            | end textstr PEQ end
+        var : end textstr PEQ textlst
+            | end textstr PEQ
         """
-        if len(p) == 6:
+        if len(p) == 5:
             if not p[2] in variables:
                 variables[p[2]] = p[4]
             elif not p[2] in ivars:
@@ -174,11 +189,10 @@ def scanmakefile(makefile):
 
     def p_ceq(p): #immediate
         """
-        end : end textstr CEQ textlst end
-            | end textstr CEQ end
+        var : end textstr CEQ textlst
+            | end textstr CEQ
         """
-        if len(p) == 6:
-            print(p[4])
+        if len(p) == 5:
             textvalue = expand(p[4],variables) #expand any variables
             variables[p[2]] = textvalue
             ivars.append(p[2])
@@ -188,20 +202,20 @@ def scanmakefile(makefile):
 
     def p_qeq(p): #deferred
         """
-        end : end textstr QEQ textlst end
-            | end textstr QEQ end
+        var : end textstr QEQ textlst
+            | end textstr QEQ
         """
-        if not p[2] in variables and len(p) == 6:
+        if not p[2] in variables and len(p) == 5:
             variables[p[2]] = p[4]
         else:
             variables[p[2]] = []
 
     def p_var(p): #deferred
         """
-        end : end textstr EQ textlst end
-            | end textstr EQ end
+        var : end textstr EQ textlst
+            | end textstr EQ
         """
-        if len(p) == 6:
+        if len(p) == 5:
             variables[p[2]] = p[4]
         else:
             variables[p[2]] = []
@@ -217,6 +231,16 @@ def scanmakefile(makefile):
             p[0] = p[1]+ [p[3]]
         else:
             p[0] = [p[1]]
+
+    def p_com_and_str(p):
+        """
+        command : command textstr
+                | textstr command
+        """
+        if isinstance(p[1],list):
+            p[0] = [p[1][0] + p[2]]
+        else:
+            p[0] = [p[1] + p[2][0]]
 
     def p_textstr(p):
         """
@@ -235,7 +259,7 @@ def scanmakefile(makefile):
                 | COMMAND
         """
         if len(p) == 2:
-            p[0] = [p[1]] #commands are lists within the testlst
+            p[0] = [p[1]] #commands are lists within the textlst
         else:
             p[0] = [p[1][0] + p[2]]
 
@@ -243,7 +267,6 @@ def scanmakefile(makefile):
         """
         end : end END
             | end spacestr END
-            | end spacestr
             | END
         """
 
