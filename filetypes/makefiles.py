@@ -54,8 +54,8 @@ def scanmakefile(makefile):
         r"[^\$\(\{\)\}]"
 
     def t_begin_com(t):
-        r"\#"
-        t.lexer.push_state("com")
+        r"[ \t]*\#"
+        t.lexer.begin("com")
 
     def t_com_other(t):
         r"[^\\\n]+"
@@ -72,7 +72,7 @@ def scanmakefile(makefile):
 
     def t_com_END(t):
         r"\n"
-        t.lexer.pop_state()
+        t.lexer.begin("INITIAL")
         t.lexer.lineno += 1
         return t
 
@@ -131,12 +131,12 @@ def scanmakefile(makefile):
         return t
 
     def t_ENDTAB(t):
-        r"\n\t"
+        r"[ \t]*\n\t"
         t.lexer.lineno += 1
         return t
 
     def t_var_TEXT(t):
-        r"[^ \n\t,\$\\]+"
+        r"[^ #\n\t,\$\\]+"
         return t
 
     def t_TEXT(t):
@@ -144,7 +144,7 @@ def scanmakefile(makefile):
         return t
 
     def t_END(t):
-        r"\n+"
+        r"[ \t]*\n+"
         t.lexer.lineno += t.value.count('\n')
         t.lexer.begin('INITIAL')
         return t
@@ -245,6 +245,7 @@ def scanmakefile(makefile):
     def p_textstr(p):
         """
         textstr : textstr LIT
+                | textstr TEXT
                 | TEXT
                 | LIT
         """
@@ -263,13 +264,6 @@ def scanmakefile(makefile):
         else:
             p[0] = [p[1][0] + p[2]]
 
-    def p_end(p):
-        """
-        end : end END
-            | end spacestr END
-            | END
-        """
-
     def p_space(p):
         """
         spacestr : spacestr SPACE
@@ -280,9 +274,16 @@ def scanmakefile(makefile):
         else:
             p[0] = p[1]
 
+    def p_end(p):
+        """
+        end : end END
+            | end spacestr END
+            | END
+        """
+
 
     def p_error(p):
-        print("syntax error at '%s'" % p.type,p.lineno)
+        print("syntax error at '%s'" % p.type,p.lexpos)
         pass
 
     yacc.yacc()
@@ -302,7 +303,7 @@ def scanmakefile(makefile):
 #deferred
 
 
-file="Makefile"
+file="Makefile2"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
     scanmakefile(inputfile.read())
