@@ -26,14 +26,15 @@ def com_interp(string,variables):
             )
     states = (
             ("ccode", "exclusive"), #command code
+            ("eval", "exclusive"), #code to evaluate
             )
 
     # Match the first $(. Enter ccode state.
-    def t_ccode(t):
+    def t_eval_ccode(t):
         r'\$(\{|\()'
         t.lexer.code_start = t.lexer.lexpos        # Record the starting position
         t.lexer.level = 1                          # Initial level
-        t.lexer.begin('ccode')                     # Enter 'ccode' state
+        t.lexer.push_state('ccode')                     # Enter 'ccode' state
 
     # Rules for the ccode state
     def t_ccode_newcom(t):
@@ -48,7 +49,7 @@ def com_interp(string,variables):
         if t.lexer.level == 0:
              t.value = t.lexer.lexdata[t.lexer.code_start-1:t.lexer.lexpos]
              t.type = "COMMAND"
-             t.lexer.begin('INITIAL')
+             t.lexer.pop_state()
              return t
 
     def t_ccode_text(t):
@@ -56,33 +57,39 @@ def com_interp(string,variables):
 
     def t_BEGINCOM(t):
         r"(\(|\{)"
+        t.lexer.begin("eval")
         return t
 
-    def t_ENDCOM(t):
+    def t_eval_ENDCOM(t):
         r"(\)|\})"
+        t.lexer.begin("INITIAL")
         return t
 
-    def t_PERCENT(t):
+    def t_eval_PERCENT(t):
         r"\%"
         return t
 
-    def t_EQ(t):
+    def t_eval_EQ(t):
         r"="
-        return t 
+        return t
 
-    def t_COMMA(t):
+    def t_eval_COMMA(t):
         r","
         return t
 
-    def t_COL(t):
+    def t_eval_COL(t):
         r":"
         return t
 
-    def t_TEXT(t):
+    def t_eval_TEXT(t):
         r"[^ \n\t:=\)\}\(\}\\\$,]+"
         return t
 
-    def t_SPACE(t):
+    def t_TEXT(t):
+        r"[^ \\t$\(\{]"
+        return t
+
+    def t_eval_SPACE(t):
         r"[ \t]"
         return t
 
@@ -92,9 +99,9 @@ def com_interp(string,variables):
 
     lexer = lex.lex()
 
-    #lexer.input(string)
-    #for tok in lexer:
-    #    print(tok)
+    lexer.input(string)
+    for tok in lexer:
+        print(tok)
 
 
     #YACC stuff begins here
@@ -281,4 +288,4 @@ def com_interp(string,variables):
 
     return retlst
 
-#print(com_interp("(y)y(y)",{"x":["y"], "y":["z"], "z":["u"],"yz":["u","v"]}))
+print(com_interp("(SRC:.c=.o)",{"x":["y"], "y":["z"], "z":["u"],'SRC': [['(wildcard src/*.c)']]}))

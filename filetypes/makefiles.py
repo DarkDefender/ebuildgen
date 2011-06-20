@@ -14,10 +14,8 @@ def scanmakefile(makefile):
             "QEQ",
             "TEXT",
             "COMMAND",
-            "PERCENT",
             "ENDTAB",
             "LIT",
-            "COMMA",
             "SPACE",
             )
 
@@ -76,17 +74,9 @@ def scanmakefile(makefile):
         t.lexer.lineno += 1
         return t
 
-    def t_SEMICOL(t):
-        r";"
-        return t
-
     def t_bsdexe(t):  #Create a cleaner version
         r".*\!=.*"
         pass
-
-    def t_PERCENT(t):
-        r"\%"
-        return t
 
     def t_EQ(t):
         r"[ \t]*=[ \t]*"
@@ -119,19 +109,24 @@ def scanmakefile(makefile):
         return t
 
     def t_COL(t):
-        r":"
+        r"[ \t]*:[ \t]*"
+        t.lexer.begin("var")
+        return t
+
+    def t_var_ENDTAB(t):
+        r"[ \t]*;[ \t]*"
+        return t
+
+    def t_SEMICOL(t):
+        r";"
         return t
 
     def t_COMMA(t):
         r","
         return t
 
-    def t_SPACE(t):
-        r"[ \t]"
-        return t
-
     def t_ENDTAB(t):
-        r"[ \t]*\n\t"
+        r"[ \t]*\n\t[ \t]*"
         t.lexer.lineno += 1
         return t
 
@@ -147,6 +142,15 @@ def scanmakefile(makefile):
         r"[ \t]*\n+"
         t.lexer.lineno += t.value.count('\n')
         t.lexer.begin('INITIAL')
+        return t
+
+    def t_SPACE(t):
+        r"[ \t]"
+        return t
+
+    def t_var_special(t):
+        r"\$[^({]"
+        t.type = "TEXT"
         return t
 
     def t_ANY_error(t):
@@ -168,10 +172,36 @@ def scanmakefile(makefile):
 
     def p_testvar(p):
         """
-        compvar : compvar var
-                | compvar end
-                | var
+        comp : comp var
+             | comp rule
+             | comp end
+             | var
+             | rule
         """
+
+    def p_ruleoption(p):
+        """
+        rule : end textlst COL textlst options
+             | end textlst COL options
+        """
+        if len(p) == 6:
+            for target in expand(p[2],variables):
+                targets.append([target,expand(p[4],variables),p[5]])
+        else:
+            for target in expand(p[2],variables):
+                targets.append([target,[],p[4]])
+
+    def p_rule(p):
+        """
+        rule : end textlst COL textlst
+             | end textlst COL
+        """
+        if len(p) == 5:
+            for target in expand(p[2],variables):
+                targets.append([target,expand(p[4],variables),[]])
+        else:
+            for target in expand(p[2],variables):
+                targets.append([target,[],[]])
 
     def p_peq(p): #immediate if peq was defined as immediate before else deferred
         """
@@ -219,6 +249,16 @@ def scanmakefile(makefile):
             variables[p[2]] = p[4]
         else:
             variables[p[2]] = []
+
+    def p_options(p):
+        """
+        options : options ENDTAB textlst
+                | ENDTAB textlst
+        """
+        if len(p) == 4:
+            p[0] = p[1] + p[3]
+        else:
+            p[0] = p[2]
 
     def p_textlst(p):
         """
@@ -290,11 +330,9 @@ def scanmakefile(makefile):
 
     yacc.parse(makefile)
 
+    for target in targets:
+        print(target)
     print(variables)
-
-    #for target in targets:
-    #    print(target)
-    #print(variables)
 
     #return targets
 
@@ -303,7 +341,7 @@ def scanmakefile(makefile):
 #deferred
 
 
-file="Makefile2"
+file="Makefile"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
     scanmakefile(inputfile.read())
