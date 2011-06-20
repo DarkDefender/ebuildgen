@@ -34,7 +34,7 @@ def com_interp(string,variables):
         r'\$(\{|\()'
         t.lexer.code_start = t.lexer.lexpos        # Record the starting position
         t.lexer.level = 1                          # Initial level
-        t.lexer.push_state('ccode')                     # Enter 'ccode' state
+        t.lexer.push_state('ccode')                # Enter 'ccode' state
 
     # Rules for the ccode state
     def t_ccode_newcom(t):
@@ -288,4 +288,4 @@ def com_interp(string,variables):
 
     return retlst
 
-print(com_interp("(SRC:.c=.o)",{"x":["y"], "y":["z"], "z":["u"],'SRC': [['(wildcard src/*.c)']]}))
+#print(com_interp("(SRC:.c=.o)",{"x":["y"], "y":["z"], "z":["u"],'SRC': [['(wildcard src/*.c)']]}))

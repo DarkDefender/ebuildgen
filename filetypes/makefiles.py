@@ -30,7 +30,7 @@ def scanmakefile(makefile):
         r'\$(\{|\()'
         t.lexer.code_start = t.lexer.lexpos        # Record the starting position
         t.lexer.level = 1                          # Initial level
-        t.lexer.push_state('ccode')                     # Enter 'ccode' state
+        t.lexer.push_state('ccode')                # Enter 'ccode' state
 
     # Rules for the ccode state
     def t_ccode_newcom(t):
@@ -341,7 +341,7 @@ def scanmakefile(makefile):
 #deferred
 
 
-file="Makefile"
+file="Makefile2"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
     scanmakefile(inputfile.read())
