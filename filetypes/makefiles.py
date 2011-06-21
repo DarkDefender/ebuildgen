@@ -1,6 +1,6 @@
 from ply import lex
 from ply import yacc
-from makefilecom import expand
+from filetypes.makefilecom import expand
 
 def scanmakefile(makefile):
     makefile = "\n" + makefile #Add \n so you can guess vars
