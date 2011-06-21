@@ -170,6 +170,7 @@ def scanmakefile(makefile):
     ivars = [] #keep track of the immediate variables
     targets = [] #buildtargets, [[target,deps,options],[target2,....
 
+
     def p_testvar(p):
         """
         comp : comp var
@@ -185,11 +186,15 @@ def scanmakefile(makefile):
              | end textlst COL options
         """
         if len(p) == 6:
-            for target in expand(p[2],variables):
-                targets.append([target,expand(p[4],variables),p[5]])
+            rulelst = convtargets(p[2],p[4],targets,variables)
+            for rule in rulelst:
+                rule.append(p[5])
+                targets.append(rule)
         else:
-            for target in expand(p[2],variables):
-                targets.append([target,[],p[4]])
+            rulelst = convtargets(p[2],[],targets,variables)
+            for rule in rulelst:
+                rule.append(p[4])
+                targets.append(rule)
 
     def p_rule(p):
         """
@@ -197,11 +202,15 @@ def scanmakefile(makefile):
              | end textlst COL
         """
         if len(p) == 5:
-            for target in expand(p[2],variables):
-                targets.append([target,expand(p[4],variables),[]])
+            rulelst = convtargets(p[2],p[4],targets,variables)
+            for rule in rulelst:
+                rule.append([])
+                targets.append(rule)
         else:
-            for target in expand(p[2],variables):
-                targets.append([target,[],[]])
+            rulelst = convtargets(p[2],[],targets,variables)
+            for rule in rulelst:
+                rule.append([])
+                targets.append(rule)
 
     def p_peq(p): #immediate if peq was defined as immediate before else deferred
         """
@@ -330,18 +339,40 @@ def scanmakefile(makefile):
 
     yacc.parse(makefile)
 
-    for target in targets:
-        print(target)
-    print(variables)
+    #for target in targets:
+    #    print(target)
+    #print(variables)
 
-    #return targets
+    return targets
 
 
 #immediate
 #deferred
 
+def convtargets(tarlist,deplist,targets,variables):
+    finaltars = []
+    deps = expand(deplist,variables)
+    tars = expand(tarlist,variables) #ugh high risk of confusion because of the names...
+    for target in tars:
+        if "%" in target:
+            tarsplit = target.split("%")
+            (l1,l2) =  len(tarsplit[0]), len(tarsplit[1])
+            for buildtarget in targets:
+                for newtar in buildtarget[1]:
+                    if newtar[-l2:] == tarsplit[1] and newtar[0:l1] == tarsplit[0]:
+                        rulelst = [newtar,[]]
+                        for newdep in deps:
+                            if "%" in newdep:
+                                depsplit = newdep.split("%")
+                                rulelst[1] += [depsplit[0] + newtar[l1:-l2] + depsplit[1]]
+                            else:
+                                rulelst[1] += [newdep]
+                        finaltars.append(rulelst)
+        else:
+            finaltars.append([target,deps])
+    return finaltars
 
-file="Makefile2"
+#file="Makefile2"
 
-with open(file, encoding="utf-8", errors="replace") as inputfile:
-    scanmakefile(inputfile.read())
+#with open(file, encoding="utf-8", errors="replace") as inputfile:
+#    scanmakefile(inputfile.read())

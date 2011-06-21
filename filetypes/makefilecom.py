@@ -99,9 +99,9 @@ def com_interp(string,variables):
 
     lexer = lex.lex()
 
-    lexer.input(string)
-    for tok in lexer:
-        print(tok)
+    #lexer.input(string)
+    #for tok in lexer:
+    #    print(tok)
 
 
     #YACC stuff begins here
