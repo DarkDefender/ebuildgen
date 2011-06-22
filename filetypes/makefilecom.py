@@ -1,5 +1,7 @@
 from ply import lex
 from ply import yacc
+import glob
+import os
 
 def expand(lst,variables):
     newlst = []
@@ -74,7 +76,7 @@ def com_interp(string,variables):
         return t
 
     def t_eval_COMMA(t):
-        r","
+        r",[ \t]*"
         return t
 
     def t_eval_COL(t):
@@ -86,10 +88,10 @@ def com_interp(string,variables):
         return t
 
     def t_TEXT(t):
-        r"[^ \\t$\(\{]"
+        r"[^ \t$\(\{]"
         return t
 
-    def t_eval_SPACE(t):
+    def t_ANY_SPACE(t):
         r"[ \t]"
         return t
 
@@ -117,20 +119,31 @@ def com_interp(string,variables):
             p[0] = p[1]
 
     def p_complst(p):
+        "complst : compstr"
+        p[0] = p[1].split()
+
+    def p_compstr(p):
         """
-        complst : complst BEGINCOM textstr ENDCOM
+        compstr : compstr BEGINCOM textstr ENDCOM
                 | BEGINCOM textstr ENDCOM
-                | complst textstr
+                | compstr textstr
+                | compstr spacestr
                 | textstr
+                | spacestr
         """
+        p[0] = ""
         if len(p) == 4:
-            p[0] = expand(variables[p[2]],variables)
+            for item in expand(variables[p[2]],variables):
+                p[0] += item + " "
+            p[0] = p[0][:-1]
         elif len(p) == 5:
-            p[0] = [p[1][0] + expand(variables[p[3]],variables)[0]]
+            for item in expand(variables[p[3]],variables):
+                p[1] += item + " "
+                p[0] = p[1][:-1]
         elif len(p) == 3:
-            p[0] = [p[1][0] + p[2]]
+            p[0] = p[1] + p[2]
         else:
-            p[0] = [p[1]]
+            p[0] = p[1]
 
     def p_tonewstr(p):
         """
@@ -218,8 +231,8 @@ def com_interp(string,variables):
         """
         func : BEGINCOM textstr SPACE funcinput
         """
-        result = ["This calls a function"]
-        #result = funcexe(p[2],p[4])
+        #result = ["This calls a function"]
+        result = funcdict[p[2]](p[4],variables)
         p[0] = result
 
     def p_funcinput(p):
@@ -230,16 +243,25 @@ def com_interp(string,variables):
                   | inputstr ENDCOM
         """
         if len(p) == 4:
-            p[0] = p[1].append(p[2])
+            if "(" in p[2]: #command in the str
+                p[1].append([p[2]])
+            else:
+                p[1].append(p[2])
+            p[0] = p[1]
         else:
-            p[0] = [p[1]]
+            if "(" in p[1]:
+                p[0] = [[p[1]]]
+            else:
+                p[0] = [p[1]]
 
     def p_inputstr(p):
         """
         inputstr : inputstr spacestr
-                 | inputstr textstr
+                 | inputstr TEXT
+                 | inputstr COMMAND
                  | spacestr
-                 | textstr
+                 | TEXT
+                 | COMMAND
         """
         if len(p) == 3:
             p[0] = p[1] + p[2]
@@ -252,9 +274,14 @@ def com_interp(string,variables):
                 | COMMAND
         """
         if len(p) == 3:
-            p[0] = p[1] + com_interp(p[2],variables)[0]
+            for item in com_interp(p[2],variables):
+                p[1] += item + " "
+            p[0] = p[1][:-1]
         else:
-            p[0] = com_interp(p[1],variables)[0]
+            p[0] = ""
+            for item in com_interp(p[1],variables):
+                p[0] += item + " "
+            p[0] = p[0][:-1] #remove the last space
 
     def p_textstr(p):
         """
@@ -288,4 +315,41 @@ def com_interp(string,variables):
 
     return retlst
 
-#print(com_interp("(SRC:.c=.o)",{"x":["y"], "y":["z"], "z":["u"],'SRC': [['(wildcard src/*.c)']]}))
+def foreach(inputlst,variables):
+    result = []
+    var = expand(inputlst[0:1],variables)
+    lst = expand(inputlst[1:2],variables)
+    for item in lst:
+        variables[var[0]] = [item]
+        result += expand([inputlst[2]],variables)
+
+    return result
+
+def wildcard(inputlst,variables):
+    command = expand(inputlst,variables)
+    return glob.glob(command[0])
+
+def shell(inputlst,variables):
+    return ["dummy shell command"]
+
+def notdir(inputlst,variables): #strip the dir from the file name
+    if isinstance(inputlst[0],list):
+        files = expand(inputlst,variables)
+    else:
+        files = inputlst[0].split()
+
+    notdirf = []
+    for file in files:
+        notdirf.append(os.path.split(file)[1])
+
+    return notdirf
+
+funcdict = {
+        "foreach" : foreach,
+        "wildcard" : wildcard,
+        "shell" : shell,
+        "notdir" : notdir,
+        }
+
+#print(com_interp("(foreach var,hej hopp,$(var))",{"x":["y","z"], "y":[".py"], "z":["u"]}))
+

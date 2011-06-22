@@ -15,10 +15,12 @@ def scandirfor(dir, filetypes):
 
 def scanmakefiledeps(makefile):
     curdir = os.path.split(makefile)[0] + "/"
+    olddir = os.getcwd()
     makefile = openfile(makefile)
     binaries = set() #the binaries that the .o file create
     filestoscan = []
     impfiles = [] #look for these files
+    os.chdir(curdir) #so makefiles commands can execute in the correct dir
     targets = scanmakefile(makefile)
     deps = targets[0][1] #Use first make target
     while deps != []:
@@ -37,6 +39,7 @@ def scanmakefiledeps(makefile):
     for impfile in impfiles:
         filestoscan.append(curdir + impfile)
     #print(filestoscan)
+    os.chdir(olddir)
     return filestoscan,binaries,targets
 
 def scanfilelist(filelist):
