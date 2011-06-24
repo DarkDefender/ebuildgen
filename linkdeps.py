@@ -1,8 +1,10 @@
 import os
 from subprocess import getstatusoutput
 
-def deptopackage(dep):
+def deptopackage(dep,addpaths):
+    print(dep)
     incpaths = ["/usr/include", "/usr/local/include"]
+    incpaths += addpaths
     depname = os.path.split(dep)[1]
 
     (statuscode,packagestr) = getstatusoutput("qfile -C " + depname)
@@ -22,5 +24,9 @@ def deptopackage(dep):
     if len(package) > 1:
         print("more than one matching package where found!")
 
+    print(package)
+    if not package:
+        print("not matching package found withing the include paths!")
+        package = ["dummy"]
     return package
 

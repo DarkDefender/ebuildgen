@@ -2,6 +2,7 @@ from ply import lex
 from ply import yacc
 import glob
 import os
+from subprocess import getstatusoutput
 
 def expand(lst,variables):
     newlst = []
@@ -133,13 +134,19 @@ def com_interp(string,variables):
         """
         p[0] = ""
         if len(p) == 4:
-            for item in expand(variables[p[2]],variables):
-                p[0] += item + " "
-            p[0] = p[0][:-1]
+            if p[2] in variables:
+                for item in expand(variables[p[2]],variables):
+                    p[0] += item + " "
+                p[0] = p[0][:-1]
+            else:
+                p[0] = ""
         elif len(p) == 5:
-            for item in expand(variables[p[3]],variables):
-                p[1] += item + " "
-                p[0] = p[1][:-1]
+            if p[3] in variables:
+                for item in expand(variables[p[3]],variables):
+                    p[1] += item + " "
+                    p[0] = p[1][:-1]
+            else:
+                p[0] = ""
         elif len(p) == 3:
             p[0] = p[1] + p[2]
         else:
@@ -330,7 +337,16 @@ def wildcard(inputlst,variables):
     return glob.glob(command[0])
 
 def shell(inputlst,variables):
-    return ["dummy shell command"]
+    command = ""
+    retlst = []
+    for item in expand(inputlst,variables):
+        command += item + " "
+    (status,returnstr) = getstatusoutput(command)
+    if status:
+        print("Error with command" + command)
+    for item in returnstr.split():
+        retlst.append(item)
+    return retlst
 
 def notdir(inputlst,variables): #strip the dir from the file name
     if isinstance(inputlst[0],list):
@@ -351,5 +367,5 @@ funcdict = {
         "notdir" : notdir,
         }
 
-#print(com_interp("(foreach var,hej hopp,$(var))",{"x":["y","z"], "y":[".py"], "z":["u"]}))
+#print(com_interp("(shell pkg-config --cflags libsoup-2.4 $(x))",{"x":["gtk+-2.0"], "y":[".py"], "z":["u"]}))
 

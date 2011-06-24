@@ -1,5 +1,6 @@
 from ply import lex
 from ply import yacc
+import glob
 from filetypes.makefilecom import expand
 
 def scanmakefile(makefile):
@@ -15,7 +16,6 @@ def scanmakefile(makefile):
             "TEXT",
             "COMMAND",
             "ENDTAB",
-            "LIT",
             "SPACE",
             )
 
@@ -103,9 +103,10 @@ def scanmakefile(makefile):
         t.lexer.lineno += 1
         pass
 
-    def t_LIT(t):
+    def t_litteral(t):
         r"\\."
         t.value = t.value[1] #take the literal char
+        t.type = "TEXT"
         return t
 
     def t_COL(t):
@@ -188,11 +189,13 @@ def scanmakefile(makefile):
         if len(p) == 6:
             rulelst = convtargets(p[2],p[4],targets,variables)
             for rule in rulelst:
+                rule = findfiles(rule,variables) #Implicit rule (path search)
                 rule.append(p[5])
                 targets.append(rule)
         else:
             rulelst = convtargets(p[2],[],targets,variables)
             for rule in rulelst:
+                rule = findfiles(rule,variables) #Implicit rule (path search)
                 rule.append(p[4])
                 targets.append(rule)
 
@@ -204,13 +207,17 @@ def scanmakefile(makefile):
         if len(p) == 5:
             rulelst = convtargets(p[2],p[4],targets,variables)
             for rule in rulelst:
-                rule.append([])
+                rule,newtars = imprules(rule,targets,variables)
                 targets.append(rule)
+                for tar in newtars:
+                    targets.append(tar)
         else:
             rulelst = convtargets(p[2],[],targets,variables)
             for rule in rulelst:
-                rule.append([])
+                rule,newtars = imprules(rule,targets,variables)
                 targets.append(rule)
+                for tar in newtars:
+                    targets.append(tar)
 
     def p_peq(p): #immediate if peq was defined as immediate before else deferred
         """
@@ -293,10 +300,8 @@ def scanmakefile(makefile):
 
     def p_textstr(p):
         """
-        textstr : textstr LIT
-                | textstr TEXT
+        textstr : textstr TEXT
                 | TEXT
-                | LIT
         """
         if len(p) == 3:
             p[0] = p[1] + p[2]
@@ -332,7 +337,7 @@ def scanmakefile(makefile):
 
 
     def p_error(p):
-        print("syntax error at '%s'" % p.type,p.lexpos)
+        print("syntax error at '%s'" % p.type,p.value)
         pass
 
     yacc.yacc()
@@ -343,11 +348,8 @@ def scanmakefile(makefile):
     #    print(target)
     #print(variables)
 
-    return targets
+    return targets,variables
 
-
-#immediate
-#deferred
 
 def convtargets(tarlist,deplist,targets,variables):
     finaltars = []
@@ -371,6 +373,83 @@ def convtargets(tarlist,deplist,targets,variables):
         else:
             finaltars.append([target,deps])
     return finaltars
+
+def findfiles(rule,variables): #check if deps exists, if not look for them in VPATH.
+    newtarget = []
+    newdeps = []
+    if "VPATH" in variables: #if vpath isn't defined this it's useless to search
+        if glob.glob(rule[0]): #check target
+            newtarget.append(rule[0])
+        else: #search for it
+            matches = []
+            for path in variables["VPATH"]:
+                matches += glob.glob(path + "/" + rule[0])
+            if matches:
+                newtarget.append(matches[0])
+            else:
+                newtarget.append(rule[0])
+
+        for dep in rule[1]:
+            if glob.glob(dep):
+                newdeps.append(dep)
+            else: #search for it
+                matches = []
+                for path in variables["VPATH"]:
+                    matches += glob.glob(path + "/" + dep)
+                if matches:
+                    newdeps.append(matches[0])
+                else:
+                    newdeps.append(dep)
+
+        newtarget.append(newdeps)
+        return newtarget #newrule
+    else:
+        return rule
+
+def find(searchstr,paths):
+    matches = []
+    for path in paths:
+        matches += glob.glob(path + "/" + searchstr)
+
+    if len(matches) > 1:
+        matches = [matches[0]]
+    return matches
+
+def imprules(rule,targets,variables): #Implicit Rules
+    if len(rule[0].split(".")) == 1: #this is not a *.* file
+        deps_type = set() #.o for example
+        for dep in rule[1]:
+            if len(dep.split(".")) == 2:
+                deps_type.add(dep.split(".")[1])
+            else:
+                deps_type.add("notype")
+        if len(deps_type) == 1 and "o" in deps_type:
+            searchpaths = ["./"]
+            if "VPATH" in variables:
+                searchpaths += variables["VPATH"]
+            matches = []
+            matches = find(rule[0] + ".c",searchpaths)
+            if matches:
+                newtargets = []
+                newdeps = []
+                newtargets.append(rule[0] + ".o")
+                newdeps.append(matches[0])
+                matches = []
+                for dep in rule[1]:
+                    matches += find(dep.split(".")[0] + ".c",searchpaths)
+                if len(matches) == len(rule[1]):
+                    newtargets += rule[1]
+                    newdeps += matches
+                    newtars = []
+                    for index in range(len(newtargets)):
+                        newtars.append([newtargets[index],[newdeps[index]],[["(CC)"], ["(CFLAGS)"], ["(CPPFLAGS)"], "-c"]])
+
+                    rule.append([["(CC)"], ["(LDFLAGS)"], "n.o", ["(LOADLIBES)"], ["(LDLIBS)"]])
+                    return rule,newtars
+
+    rule = findfiles(rule,variables)
+    rule.append([])
+    return rule,[]
 
 #file="Makefile2"
 

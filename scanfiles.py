@@ -2,6 +2,7 @@ import os
 import glob
 from filetypes.ctypefiles import scanincludes
 from filetypes.makefiles import scanmakefile
+from filetypes.makefilecom import expand
 
 def scandirfor(dir, filetypes):
     files = []
@@ -18,10 +19,11 @@ def scanmakefiledeps(makefile):
     olddir = os.getcwd()
     makefile = openfile(makefile)
     binaries = set() #the binaries that the .o file create
-    filestoscan = []
+    filestoscan = set()
     impfiles = [] #look for these files
+    moptions = [] #make options scan these for -I... flags
     os.chdir(curdir) #so makefiles commands can execute in the correct dir
-    targets = scanmakefile(makefile)
+    targets,variables = scanmakefile(makefile)
     deps = targets[0][1] #Use first make target
     while deps != []:
         newdeps = []
@@ -31,16 +33,24 @@ def scanmakefiledeps(makefile):
                     newdeps += target[1]
                     if ".o" in dep or dep in impfiles:
                         impfiles += target[1]
+                        moptions += target[2]
                     elif ".o" in target[1][0]:
                         binaries.add(target[0])
+                        moptions += target[2]
         deps = newdeps
 
-    #impfiles.sort()
+    #print(impfiles)
     for impfile in impfiles:
-        filestoscan.append(curdir + impfile)
+        filestoscan.add(curdir + impfile)
+
+    incflags = set()
+    for item in expand(moptions,variables):
+        if item[0:2] == "-I":
+            incflags.add(item[2:])
+
     #print(filestoscan)
     os.chdir(olddir)
-    return filestoscan,binaries,targets
+    return filestoscan,binaries,incflags,targets
 
 def scanfilelist(filelist):
     global_hfiles = set()
@@ -62,8 +72,8 @@ def scanproject(dir,projecttype):
 
     mfile = scandirfor(dir, filestolookfor)[0] #use first file found
     print(mfile)
-    (scanlist,binaries,targets) = scanmakefiledeps(mfile)
-    return scanfilelist(scanlist),binaries,targets
+    (scanlist,binaries,incflags,targets) = scanmakefiledeps(mfile)
+    return scanfilelist(scanlist),binaries,incflags,targets
 
 def openfile(file):
     try:

@@ -52,11 +52,11 @@ else:
     srcdir = args.dir
     dltype = "www"
 
-(inclst,binaries,targets) = scanfiles.scanproject(srcdir,"makefile")
+(inclst,binaries,incpaths,targets) = scanfiles.scanproject(srcdir,"makefile")
 packages = set()
 print(binaries)
 for dep in inclst[0]:
-    packages.add(linkdeps.deptopackage(dep)[0])
+    packages.add(linkdeps.deptopackage(dep,incpaths)[0])
 
 ebuildgen.genebuild([],packages,dltype,args.dir,targets,binaries)
 
