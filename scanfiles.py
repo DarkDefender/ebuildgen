@@ -68,7 +68,7 @@ def scanproject(dir,projecttype):
     if projecttype == "guess":
         filestolookfor = ["Makefile","makefile"] #add more later
     elif projecttype == "makefile":
-        filestolookfor = ["Makefile","makeifle"]
+        filestolookfor = ["Makefile","makefile"]
 
     mfile = scandirfor(dir, filestolookfor)[0] #use first file found
     print(mfile)
