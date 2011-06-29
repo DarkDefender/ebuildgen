@@ -10,3 +10,4 @@ Handle deptopackage conversion where the dep is defined at root lever IE dep = /
 Handle ../map/%.type : %.type2 makefile targets
 Handle zip,tar for unpacking
 Handle $(foo)_test = ... variable assingment
+Add more filetypes to search for in the implicid makefile ".c" search
