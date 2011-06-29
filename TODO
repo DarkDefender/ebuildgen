@@ -11,3 +11,4 @@ Handle ../map/%.type : %.type2 makefile targets
 Handle zip,tar for unpacking
 Handle $(foo)_test = ... variable assingment
 Add more filetypes to search for in the implicid makefile ".c" search
+Have ply write the parser.out to different files for different filetypes so that is doesn't overwrite other parsers
