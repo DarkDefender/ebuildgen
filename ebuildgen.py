@@ -10,6 +10,17 @@ eclass = {
 arch = getstatusoutput("portageq envvar ARCH")[1]
 
 def genebuild(iuse,deps,dltype,adress,targets,binaries):
+    """This function starts the ebuild generation.
+
+    You have to provide the following args in order:
+    iuse, a list of useflags
+    deps, a list of dependecies
+    dltype, how to download the source code (wget,GIT,etc)
+    adress, Adress to the source code
+    targets, a list of build targets for the project (used to guess install method)
+    binaries, a list of binaries that is created during compile (used to install them if there is no 'make install')
+    """
+
     installmethod = guessinstall(targets,binaries)
     outstr = outputebuild(iuse,deps,dltype,adress,installmethod)
     f = open("/tmp/workfile.ebuild","w")
@@ -17,6 +28,12 @@ def genebuild(iuse,deps,dltype,adress,targets,binaries):
     f.close()
 
 def guessinstall(targets,binaries):
+    """Guess the install method of the project
+
+    Looks at the make targets for a 'make install'
+    if that fails just install the binaries
+    """
+
     targetlst = []
     returnlst = []
     for target in targets:
@@ -31,6 +48,11 @@ def guessinstall(targets,binaries):
     return returnlst
 
 def outputebuild(iuse,deps,dltype,adress,installmethod):
+    """Used to generate the text for the ebuild to output
+
+    Generates text with the help of the supplied variables
+    """
+
     text = [
             '# Copyright 1999-' + strftime("%Y") + ' Gentoo Foundation',
             '# Distributed under the terms of the GNU General Public License v2',

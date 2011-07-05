@@ -9,6 +9,10 @@ cmdlineget = {
         }
 
 def getsourcecode(adress,repotype):
+    """This downloads the sourcecode to /tmp/ebuildgen/curproj
+
+    Supply the adress to the source code and repo type
+    """
     callstr = cmdlineget[repotype]
 
     try:

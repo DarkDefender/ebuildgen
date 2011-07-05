@@ -5,6 +5,11 @@ from filetypes.makefiles import scanmakefile
 from filetypes.makefilecom import expand
 
 def scandirfor(dir, filetypes):
+    """Scans recursivly the supplied dir for provided filetypes.
+
+    And return a list of files found
+    """
+
     files = []
     dirs = [f for f in os.listdir(dir)
         if os.path.isdir(os.path.join(dir, f))]
@@ -15,6 +20,14 @@ def scandirfor(dir, filetypes):
     return files
 
 def scanmakefiledeps(makefile):
+    """Scans makefile for what files it would compile.
+
+    returns a list of files to scan for deps,
+    binaries build with the first makefile option,
+    additional includeflags and what the 'targets : deps'
+    are in the makefile
+    """
+
     curdir = os.path.split(makefile)[0] + "/"
     olddir = os.getcwd()
     makefile = openfile(makefile)
@@ -53,6 +66,14 @@ def scanmakefiledeps(makefile):
     return filestoscan,binaries,incflags,targets
 
 def scanfilelist(filelist):
+    """ Scan files in filelist for #includes
+
+    returns a includes list with this structure:
+    [set(),set(),dict()]
+    There the first two sets contains global and local includes
+    and the dict contains variables that can pull in additional includes
+    with the same structure as above
+    """
     global_hfiles = set()
     local_hfiles = set()
     inclst = [global_hfiles,local_hfiles,{}]
@@ -65,6 +86,11 @@ def scanfilelist(filelist):
     return(inclst)
 
 def scanproject(dir,projecttype):
+    """Scan a project (source) dir for files that may build it
+
+    This tries to guess which kind of project it is. IE
+    autotools? makefile?
+    """
     if projecttype == "guess":
         filestolookfor = ["Makefile","makefile"] #add more later
     elif projecttype == "makefile":
@@ -76,6 +102,10 @@ def scanproject(dir,projecttype):
     return scanfilelist(scanlist),binaries,incflags,targets
 
 def openfile(file):
+    """Open a file and return the content as a string.
+
+    Returns nothing and print an error if the file cannot be read
+    """
     try:
         with open(file, encoding="utf-8", errors="replace") as inputfile:
             return inputfile.read()

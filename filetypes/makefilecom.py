@@ -5,6 +5,14 @@ import os
 from subprocess import getstatusoutput
 
 def expand(lst,variables):
+    """Expands makefile variables.
+
+    Expand all items in the supplied list that are list within the list.
+    Returns a list where all the previously unexpanded variables are now
+    expanded.
+    Besides the list this needs a dict with variables found in the makefile.
+    """
+
     newlst = []
     for item in lst:
         if isinstance(item, list):
@@ -16,6 +24,10 @@ def expand(lst,variables):
     return newlst
 
 def com_interp(string,variables):
+    """Interpret the supplied command and return a list with the output
+
+    """
+
     tokens = (
             "COMMAND",
             "COMMA",
@@ -323,6 +335,10 @@ def com_interp(string,variables):
     return retlst
 
 def foreach(inputlst,variables):
+    """GNU makefile foreach.
+
+    """
+
     result = []
     var = expand(inputlst[0:1],variables)
     lst = expand(inputlst[1:2],variables)
@@ -333,10 +349,16 @@ def foreach(inputlst,variables):
     return result
 
 def wildcard(inputlst,variables):
+    """GNU makefile wildcard
+
+    """
     command = expand(inputlst,variables)
     return glob.glob(command[0])
 
 def shell(inputlst,variables):
+    """GNU makefile shell command
+
+    """
     command = ""
     retlst = []
     for item in expand(inputlst,variables):
@@ -349,6 +371,9 @@ def shell(inputlst,variables):
     return retlst
 
 def notdir(inputlst,variables): #strip the dir from the file name
+    """GNU makefile notdir
+
+    """
     if isinstance(inputlst[0],list):
         files = expand(inputlst,variables)
     else:

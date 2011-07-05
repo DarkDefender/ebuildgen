@@ -4,6 +4,10 @@ import glob
 from filetypes.makefilecom import expand
 
 def scanmakefile(makefile):
+    """Scan supplied makefile.
+
+    Returns a list of targets and variables found
+    """
     makefile = "\n" + makefile #Add \n so you can guess vars
     tokens = (
             "END",
@@ -352,6 +356,10 @@ def scanmakefile(makefile):
 
 
 def convtargets(tarlist,deplist,targets,variables):
+    """Convert makefile targets that are not explicitly stated in the makefile
+
+    """
+
     finaltars = []
     deps = expand(deplist,variables)
     tars = expand(tarlist,variables) #ugh high risk of confusion because of the names...
@@ -375,6 +383,11 @@ def convtargets(tarlist,deplist,targets,variables):
     return finaltars
 
 def findfiles(rule,variables): #check if deps exists, if not look for them in VPATH.
+    """Find files for a implicit makefile rule
+
+    This searches the VPATH for files that match the name of the implicitly stated target
+    IE io.o -> src/io.c (if VPATH is src for example)
+    """
     newtarget = []
     newdeps = []
     if "VPATH" in variables: #if vpath isn't defined this it's useless to search
@@ -407,6 +420,12 @@ def findfiles(rule,variables): #check if deps exists, if not look for them in VP
         return rule
 
 def find(searchstr,paths):
+    """Returns a list of matches for a search pattern
+
+    This is mostly used in implicit rules so it just returns the first
+    match of the search as this is how it work in makefiles
+    """
+
     matches = []
     for path in paths:
         matches += glob.glob(path + "/" + searchstr)
@@ -416,6 +435,9 @@ def find(searchstr,paths):
     return matches
 
 def imprules(rule,targets,variables): #Implicit Rules
+    """Converts implicit rules to explicit rules
+
+    """
     if len(rule[0].split(".")) == 1: #this is not a *.* file
         deps_type = set() #.o for example
         for dep in rule[1]:

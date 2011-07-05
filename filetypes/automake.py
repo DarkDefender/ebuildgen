@@ -3,6 +3,10 @@ from ply import yacc
 import glob
 
 def scanamfile(amfile):
+    """Scan automake (.am) file
+
+    Returns ...
+    """
     amfile = "\n" + amfile #Add \n so you can guess vars
     tokens = (
             "END",

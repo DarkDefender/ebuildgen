@@ -2,6 +2,10 @@ from ply import lex
 from ply import yacc
 
 def scanacfile(acfile):
+    """Scan a autoconfigure (.in/.ac) file.
+
+    Returns ....
+    """
 
     tokens = (
             "FUNC",
@@ -11,16 +15,21 @@ def scanacfile(acfile):
             "ECHO",
             "TEXT",
             "IF",
+            "IFCOM",
             "ELSE",
             "THEN",
             "IFEND",
             "CASE",
+            "CASEOPT",
+            "COPTEND", #case opt end, doesn't need to be there but SHOULD
             "CASEEND",
             )
 
     states = (
             ("func", "exclusive"),
             ("funcopt", "exclusive"),
+            ("case", "inclusive"),
+            ("if", "inclusive"),
             )
 
     def t_ANY_contline(t):
@@ -99,10 +108,16 @@ def scanacfile(acfile):
 
     def t_IF(t):
         r"if"
+        t.lexer.push_state("if")
         return t
 
-    def t_THEN(t):
+    def t_if_THEN(t):
         r"then"
+        t.lexer.pop_state()
+        return t
+
+    def t_if_IFCOM(t):
+        r"[^ \t\n\(\)]+"
         return t
 
     def t_ELSE(t):
@@ -115,10 +130,20 @@ def scanacfile(acfile):
 
     def t_CASE(t):
         r"case.*in"
+        t.lexer.push_state("case")
         return t
 
     def t_CASEEND(t):
         r"esac"
+        t.lexer.pop_state()
+        return t
+
+    def t_case_CASEOPT(t):
+        r"[^ \n\t\(\)]+\)"
+        return t
+
+    def t_case_COPTEND(t):
+        r";;"
         return t
 
     def t_literal(t):
@@ -127,7 +152,7 @@ def scanacfile(acfile):
         t.value = t.value[-1] #return litral char
         return t
 
-    def t_TEXT(t):
+    def t_TEXT(t):            #most likely commands like "AM_INIT_AUTOMAKE" etc.
         r"[^ \t\n\(\)]+"
         return t
 
@@ -140,6 +165,26 @@ def scanacfile(acfile):
     lexer.input(acfile)
     for tok in lexer:
         print(tok)
+
+    #YACC stuff begins here
+
+    def p_complst(p):
+        """
+        complst : complst var
+                | complst func
+                | var
+                | func
+        """
+
+    def p_textlst(p):
+        """
+        textlst : textlst TEXT
+                | TEXT
+        """
+        if len(p) == 3:
+            p[0] = p[1] += [p[1]]
+        else:
+            p[0] = [p[1]]
 
 file="configure.in"
 

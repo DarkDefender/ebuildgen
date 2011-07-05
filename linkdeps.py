@@ -2,6 +2,11 @@ import os
 from subprocess import getstatusoutput
 
 def deptopackage(dep,addpaths):
+    """Converts supplied deps with additional include paths to portage packages
+
+    This uses qfile to quess which package certain files belongs to.
+    """
+
     print(dep)
     incpaths = ["/usr/include", "/usr/local/include"]
     incpaths += addpaths

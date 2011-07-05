@@ -5,6 +5,14 @@ from ply import yacc
 #lex stuff begins here
 
 def scanincludes(string,inclst,curdir):
+    """Scan ctype files for #includes
+
+    Adds and returns new includes to the supplied include list
+    input:
+    string with the file contents to scan,
+    a include list
+    string with the current working dir
+    """
     tokens = (
             "GINCLUDE",
             "LINCLUDE",
@@ -151,6 +159,12 @@ def scanincludes(string,inclst,curdir):
     return(newinclst)
 
 def islocalinc(inc, curdir):
+    """Checks if this is a local include
+
+    Checks if the file can be found with the path the is supplied.
+    If not this is probably a global include and thus return False
+    """
+
     if glob.glob(curdir + "/" + inc) == []:
         return False
     else:
@@ -158,6 +172,10 @@ def islocalinc(inc, curdir):
 
 
 def addnewincludes(inclist1,inclist2):
+    """Adds new includes to the first inclist and return it
+
+    Does a deeper scan for ifdef includes
+    """
     #come up with better names!!
     inclist1[0] = inclist1[0] | inclist2[0]
     inclist1[1] = inclist1[1] | inclist2[1]
@@ -165,6 +183,11 @@ def addnewincludes(inclist1,inclist2):
     return(inclist1)
 
 def addnewifdefs(dict1,dict2):
+    """Merges the ifdef section of the inclst
+
+    Returns a new list with all of the ifdefs
+    """
+
     if dict1 == {} and dict2 == {}:
         #we are done here
         return(dict())
