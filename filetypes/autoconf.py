@@ -16,6 +16,7 @@ def scanacfile(acfile):
             "TEXT",
             "IF",
             "IFCOM",
+            "ELIF",
             "ELSE",
             "THEN",
             "IFEND",
@@ -32,7 +33,7 @@ def scanacfile(acfile):
             ("if", "inclusive"),
             )
 
-    def t_ANY_contline(t):
+    def t_contline(t):
         r"\\\n"
         t.lexer.lineno += 1
         pass
@@ -78,14 +79,27 @@ def scanacfile(acfile):
     def t_funcopt_opt(t):
         r"[^\\\[\]]+"
 
+    def t_funcopt_contline(t):
+        r"\\\n"
+
     def t_func_FUNCOPT(t):
         r"[^\\\(\)\[\],]+"
         t.lexer.lineno += t.value.count('\n')
         return t
 
     def t_func_comma(t):
-        r"[ \t]*,[ \t]*"
-        pass
+        r"[ \t]*,(,|[ \t])*"
+        numcommas = t.value.count(',')
+        if numcommas > 1:
+            numcommas -= 1 #,,, -> ,[],[],
+            t.type = "FUNCOPT"
+            t.value = []
+            while numcommas:
+                numcommas -= 1
+                t.value += ["[]"]
+            return t
+        else:
+            pass
 
     def t_func_FUNCEND(t):
         r"\)"
@@ -103,11 +117,17 @@ def scanacfile(acfile):
         return t
 
     def t_VAR(t):
-        r"[a-zA-Z_][a-zA-Z0-9_]*=([^\\\n]|\\\n)*\n"
+        r"[a-zA-Z_][a-zA-Z0-9_]*=([^;\\\n]|\\\n)*\n"
+        t.lexer.lineno += t.value.count('\n')
         return t
 
     def t_IF(t):
         r"if"
+        t.lexer.push_state("if")
+        return t
+
+    def t_ELIF(t):
+        r"elif"
         t.lexer.push_state("if")
         return t
 
@@ -117,7 +137,7 @@ def scanacfile(acfile):
         return t
 
     def t_if_IFCOM(t):
-        r"[^ \t\n\(\)]+"
+        r"[^ \t\n]+"
         return t
 
     def t_ELSE(t):
@@ -139,7 +159,7 @@ def scanacfile(acfile):
         return t
 
     def t_case_CASEOPT(t):
-        r"[^ \n\t\(\)]+\)"
+        r"[^\n\t\(\)]+\)"
         return t
 
     def t_case_COPTEND(t):
@@ -153,38 +173,149 @@ def scanacfile(acfile):
         return t
 
     def t_TEXT(t):            #most likely commands like "AM_INIT_AUTOMAKE" etc.
-        r"[^ \t\n\(\)]+"
+        r"[^ ;\t\n\(\)]+"
         return t
 
     def t_ANY_error(t):
-        print("Illegal character '%s'" % t.value[0])
+        print("Illegal character '%s'" % t.value[0],t.lexer.lineno)
         t.lexer.skip(1)
 
     lexer = lex.lex()
 
-    lexer.input(acfile)
-    for tok in lexer:
-        print(tok)
+    #lexer.input(acfile)
+    #for tok in lexer:
+    #    print(tok)
 
     #YACC stuff begins here
 
     def p_complst(p):
         """
-        complst : complst var
+        complst : complst TEXT
+                | complst ECHO
                 | complst func
-                | var
-                | func
-        """
-
-    def p_textlst(p):
-        """
-        textlst : textlst TEXT
+                | complst VAR
+                | complst ifcomp
+                | complst case
                 | TEXT
+                | ECHO
+                | func
+                | VAR
+                | ifcomp
+                | case
         """
         if len(p) == 3:
-            p[0] = p[1] += [p[1]]
+            p[0] = p[1] + [p[2]]
         else:
             p[0] = [p[1]]
+
+    def p_case(p):
+        """
+        case : CASE caseopt CASEEND
+        """
+        p[0] = [p[1]] + [p[2]]
+
+    def p_caseopt(p):
+        """
+        caseopt : caseopt CASEOPT complst COPTEND
+                | CASEOPT complst COPTEND
+        """
+        if len(p) == 5:
+            p[0] = p[1] + [p[2], p[3]]
+        else:
+            p[0] = [p[1], p[2]]
+
+    def p_caseopt2(p):
+        """
+        caseopt : caseopt CASEOPT complst
+                | caseopt CASEOPT COPTEND
+                | CASEOPT complst
+                | CASEOPT COPTEND
+        """
+        if len(p) == 4:
+            if isinstance(p[3],list):
+                p[0] = p[1] + [p[2], p[3]]
+            else:
+                p[0] = p[1] + [p[2], []]
+        else:
+            if isinstance(p[2],list):
+                p[0] = [p[1], p[2]]
+            else:
+                p[0] = [p[1], []]
+
+    def p_ifcomp(p): #perhaps needs elif also
+        """
+        ifcomp : if IFEND
+        """
+        p[0] = p[1]
+
+    def p_if(p):
+        """
+        if : if ELSE complst
+           | IF ifcom THEN complst
+           | if ELIF ifcom THEN complst
+        """
+        if len(p) == 5:
+            p[0] = [[p[1]] + [p[2]], p[4]]
+
+        elif len(p) == 6:
+            p[0] = p[1] + [[p[2]] + [p[3]], p[5]]
+
+        else:
+            p[0] = p[1] + [[p[2]], p[3]]
+
+
+    def p_ifcom(p):
+        """
+        ifcom : ifcom IFCOM
+              | IFCOM
+        """
+        if len(p) == 3:
+            p[0] = p[1] + [p[2]]
+        else:
+            p[0] = [p[1]]
+
+    def p_func(p):
+        """
+        func : FUNC funcopt FUNCEND
+        """
+        p[0] = [p[1],p[2]]
+
+    def p_funcopt3(p):
+        """
+        funcopt : funcopt func
+        """
+        p[0] = p[1] + [p[2]]
+
+    def p_funcopt2(p):
+        """
+        funcopt : func funcopt
+        """
+        p[0] = [p[1]] + p[2]
+
+    def p_funcopt(p):
+        """
+        funcopt : funcopt FUNCOPT
+                | FUNCOPT
+        """
+        if len(p) == 3:
+            if isinstance(p[2], list):
+                p[0] = p[1] + p[2]
+            else:
+                p[0] = p[1] + [p[2]]
+        elif isinstance(p[1], list):
+            p[0] = p[1]
+        else:
+            p[0] = [p[1]]
+
+    def p_error(p):
+        print("syntax error at '%s'" % p.type,p.value)
+        pass
+
+    yacc.yacc()
+
+    items = yacc.parse(acfile)
+    for item in items:
+        print(item)
 
 file="configure.in"
 
