@@ -9,6 +9,7 @@ def scanacfile(acfile):
 
     tokens = (
             "FUNC",
+            "COMPFUNC", #complete func
             "FUNCOPT", #func options
             "FUNCEND",
             "VAR",
@@ -24,13 +25,15 @@ def scanacfile(acfile):
             "CASEOPT",
             "COPTEND", #case opt end, doesn't need to be there but SHOULD
             "CASEEND",
+            "COMMA",
             )
 
     states = (
-            ("func", "exclusive"),
+            ("func", "inclusive"),
             ("funcopt", "exclusive"),
             ("case", "inclusive"),
             ("if", "inclusive"),
+            ("shellcom", "exclusive"),
             )
 
     def t_contline(t):
@@ -42,12 +45,38 @@ def scanacfile(acfile):
         r"[ \t]"
         pass
 
-    def t_ANY_newline(t):
+    def t_newline(t):
         r"\n"
         t.lexer.lineno += 1
         pass
 
-    def t_INITIAL_func_FUNC(t):
+    def t_shfunc(t): #shell func
+        r'[a-zA-Z_][a-zA-Z0-9_]*\(\)[ \t]*{'
+        t.lexer.level = 1
+        t.lexer.push_state("shellcom")
+
+    def t_shellcom_text(t):
+        r"[^{}]+"
+
+    def t_shellcom_opb(t):
+        r"{"
+        t.lexer.level +=1
+
+    def t_shellcom_opc(t):
+        r"}"
+        t.lexer.level -=1
+
+        if t.lexer.level == 0:
+            t.lexer.pop_state()
+            pass
+
+    def t_COMPFUNC(t):
+        r'[a-zA-Z_][a-zA-Z0-9_]*\([^\\[\](\),]*\)'
+        values = t.value.split("(")
+        t.value = [values[0],values[1][:-1]]
+        return t
+
+    def t_FUNC(t):
         r'[a-zA-Z_][a-zA-Z0-9_]*\('
         t.lexer.push_state('func')
         t.value = t.value[:-1] #return name of func
@@ -82,24 +111,9 @@ def scanacfile(acfile):
     def t_funcopt_contline(t):
         r"\\\n"
 
-    def t_func_FUNCOPT(t):
-        r"[^\\\(\)\[\],]+"
-        t.lexer.lineno += t.value.count('\n')
+    def t_func_COMMA(t):
+        r","
         return t
-
-    def t_func_comma(t):
-        r"[ \t]*,(,|[ \t])*"
-        numcommas = t.value.count(',')
-        if numcommas > 1:
-            numcommas -= 1 #,,, -> ,[],[],
-            t.type = "FUNCOPT"
-            t.value = []
-            while numcommas:
-                numcommas -= 1
-                t.value += ["[]"]
-            return t
-        else:
-            pass
 
     def t_func_FUNCEND(t):
         r"\)"
@@ -117,7 +131,8 @@ def scanacfile(acfile):
         return t
 
     def t_VAR(t):
-        r"[a-zA-Z_][a-zA-Z0-9_]*=([^;\\\n]|\\\n)*\n"
+        #take var=text, var="text text", var='text text', var=`text text`
+        r"[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|\'[^\']*\'|\`[^\`]*\`|[^() \t,\n]*)+"
         t.lexer.lineno += t.value.count('\n')
         return t
 
@@ -173,7 +188,7 @@ def scanacfile(acfile):
         return t
 
     def t_TEXT(t):            #most likely commands like "AM_INIT_AUTOMAKE" etc.
-        r"[^ ;\t\n\(\)]+"
+        r"([^ ;,\t\n\(\)]+|\([^() \t\n]*\))"
         return t
 
     def t_ANY_error(t):
@@ -190,23 +205,35 @@ def scanacfile(acfile):
 
     def p_complst(p):
         """
-        complst : complst TEXT
+        complst : complst text
                 | complst ECHO
                 | complst func
                 | complst VAR
                 | complst ifcomp
                 | complst case
-                | TEXT
+                | complst FUNCOPT
+                | text
                 | ECHO
                 | func
                 | VAR
                 | ifcomp
                 | case
+                | FUNCOPT
         """
         if len(p) == 3:
             p[0] = p[1] + [p[2]]
         else:
             p[0] = [p[1]]
+
+    def p_text(p):
+        """
+        text : text TEXT
+             | TEXT
+        """
+        if len(p) == 3:
+            p[0] = p[1] + " " + p[2]
+        else:
+            p[0] = p[1]
 
     def p_case(p):
         """
@@ -277,35 +304,46 @@ def scanacfile(acfile):
     def p_func(p):
         """
         func : FUNC funcopt FUNCEND
+             | COMPFUNC
         """
-        p[0] = [p[1],p[2]]
+        if len(p) == 2:
+            p[0] = p[1] #this is already ordered
+        else:
+            p[0] = [p[1],p[2]]
 
-    def p_funcopt3(p):
+    def p_funccomma(p):
         """
-        funcopt : funcopt func
+        funcopt : funcopt COMMA
+                | COMMA complst
+                | COMMA
         """
-        p[0] = p[1] + [p[2]]
+        if len(p) == 3:
+            if isinstance(p[2],list):
+                if len(p[2]) > 1:
+                    p[0] = [[]] + [p[2]]
+                else:
+                    p[0] = [[]] + p[2]
 
-    def p_funcopt2(p):
-        """
-        funcopt : func funcopt
-        """
-        p[0] = [p[1]] + p[2]
+            else:
+                p[0] = p[1] + [[]]
+        else:
+            p[0] = [[]]
 
     def p_funcopt(p):
         """
-        funcopt : funcopt FUNCOPT
-                | FUNCOPT
+        funcopt : funcopt COMMA complst
+                | complst
         """
-        if len(p) == 3:
-            if isinstance(p[2], list):
-                p[0] = p[1] + p[2]
+        if len(p) == 4:
+            if len(p[3]) > 1:
+                p[0] = p[1] + [p[3]]
             else:
-                p[0] = p[1] + [p[2]]
-        elif isinstance(p[1], list):
-            p[0] = p[1]
+                p[0] = p[1] + p[3]
         else:
-            p[0] = [p[1]]
+            if len(p[1]) > 1:
+                p[0] = [p[1]]
+            else:
+                p[0] = p[1]
 
     def p_error(p):
         print("syntax error at '%s'" % p.type,p.value)
@@ -314,10 +352,10 @@ def scanacfile(acfile):
     yacc.yacc()
 
     items = yacc.parse(acfile)
-    for item in items:
-        print(item)
+    #for item in items:
+    #   print(item)
 
-file="configure.in"
+file="configure.ac"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
     scanacfile(inputfile.read())
