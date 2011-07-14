@@ -188,6 +188,7 @@ def scanacfile(acfile):
         return t
 
     def t_TEXT(t):            #most likely commands like "AM_INIT_AUTOMAKE" etc.
+        #Fix this so I can handle variables like the one above as that is NOT a text string
         r"([^ ;,\t\n\(\)]+|\([^() \t\n]*\))"
         return t
 
@@ -352,10 +353,56 @@ def scanacfile(acfile):
     yacc.yacc()
 
     items = yacc.parse(acfile)
-    #for item in items:
-    #   print(item)
+    return items
 
-file="configure.ac"
+from acif import parseif
+
+def output(inputlst):
+    variables = dict()
+    ifs = []
+    for item in inputlst:
+        if item[0] == "AC_ARG_ENABLE":
+            name = convnames(item[1][0])
+            if len(item[1]) == 2:
+                variables["enable_" + name] = [[],[]]
+            elif len(item[1]) == 3:
+                variables["enable_" + name] = [item[1][2],[]]
+            else:
+                variables["enable_" + name] = [item[1][2],item[1][3]]
+
+        #remember to convert chars in the name of "item[1]" that is not
+        #alfanumeric char to underscores _
+
+        if item[0] == "AC_ARG_WITH":
+            name = convnames(item[1][0])
+            if len(item[1]) == 2:
+                variables["with_" + name] = [[],[]]
+            elif len(item[1]) == 3:
+                variables["with_" + name] = [item[1][2],[]]
+            else:
+                variables["with_" + name] = [item[1][2],item[1][3]]
+        elif isinstance(item[0],list): #if statements
+            for variable in variables:
+                for pattern in item[0][1]:
+                    if variable in pattern:
+                        ifs += [parseif(item[0][1])]
+        elif "=" in item:
+            #print(item)
+            b = 0
+
+    #for variable in variables:
+        #print(variable)
+        #print(variables[variable])
+    print(ifs)
+
+import re
+def convnames(string): #strip none alfanumeric chars and replace them with "_"
+    string = string.strip("[]") #remove quotes
+    pattern = re.compile("\W")
+    newstr = re.sub(pattern, "_", string)
+    return newstr
+
+file="configure.in"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
-    scanacfile(inputfile.read())
+    output(scanacfile(inputfile.read()))

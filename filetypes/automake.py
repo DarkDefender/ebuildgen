@@ -18,11 +18,15 @@ def scanamfile(amfile):
             "TEXT",
             "ENDTAB",
             "SPACE",
+            "IF",
+            "ELSE",
+            "ENDIF",
             )
 
     states = (
             ("com", "exclusive"), #comment
             ("var", "inclusive"),
+            ("if", "exclusive"),
             )
 
     def t_begin_com(t):
@@ -42,6 +46,29 @@ def scanamfile(amfile):
         t.lexer.lineno += 1
         pass
 
+    def t_ifbegin(t):
+        #ugly hack to ensure that this is at the begining of the line and keep the newline token.
+        #PLY doesn't support the "^" beginning of line regexp :,(
+        r"\nif"
+        t.type = "END"
+        t.lexer.push_state("if")
+        return t
+
+    def t_if_IF(t):
+        #http://www.gnu.org/s/hello/manual/automake/Usage-of-Conditionals.html#Usage-of-Conditionals
+        r"[ \t]+[^ \n\t]*"
+        t.value = t.value.strip() #take the variable to test
+        t.lexer.pop_state()
+        return t
+
+    def t_ELSE(t):
+        r"\nelse"
+        return t
+
+    def t_ENDIF(t):
+        r"\nendif"
+        return t
+
     def t_CVAR(t): #configure variable
         r"@.*?@" #not greedy
         t.value = t.value.strip("@")
@@ -60,11 +87,13 @@ def scanamfile(amfile):
     def t_EQ(t):
         r"[ \t]*=[ \t]*"
         t.lexer.begin("var")
+        t.value = t.value.strip()
         return t
 
     def t_PEQ(t):
         r"[ \t]*\+=[ \t]*"
         t.lexer.begin("var")
+        t.value = t.value.strip()
         return t
 
     def t_contline(t):
@@ -101,14 +130,18 @@ def scanamfile(amfile):
         return t
 
     def t_END(t):
-        r"[ \t]*\n+"
+        r"[ \t]*\n"
         t.lexer.lineno += t.value.count('\n')
         t.lexer.begin('INITIAL')
         return t
 
-    def t_SPACE(t):
+    def t_var_SPACE(t):
         r"[ \t]+"
         return t
+
+    def t_space(t):
+        r"[ \t]"
+        pass
 
     def t_var_special(t):
         r"\$[^({]"
@@ -128,26 +161,46 @@ def scanamfile(amfile):
     #YACC stuff begins here
 
     def p_done(p):
-        "done : vars END"
+        "done : vars end"
         p[0] = p[1]
 
     def p_vars(p):
         """
-        vars : vars END var
-             | END var
+        vars : vars end var
+             | end var
         """
         if len(p) == 4:
-            p[1].update(p[3])
-            p[0] = p[1]
+            p[1][0].update(p[3][0])
+            p[1][2].update(p[3][2])
+            p[0] = [p[1][0], p[1][1] + p[3][1], p[1][2]]
+
         else:
             p[0] = p[2]
+
+    def p_if(p):
+        """
+        var : IF vars ENDIF
+            | IF vars ELSE vars ENDIF
+        """
+        if len(p) == 4:
+            p[0] = [{},[],{p[1]:p[2]}]
+
+        else:
+            p[0] = [{},[],{p[1]:p[2],"!"+p[1]:p[4]}]
 
     def p_var(p):
         """
         var : textstr EQ textlst
+            | textstr EQ
             | textstr PEQ textlst
         """
-        p[0] = {p[1]:p[3]}
+        if p[2] == "=":
+            if len(p) == 4:
+                p[0] = [{p[1]: p[3]},[],{}]
+            else:
+                p[0] = [{p[1]: []},[],{}]
+        else:
+            p[0] = [{},[[p[1], p[3]]],{}]
 
     def p_textlst(p):
         """
@@ -183,6 +236,12 @@ def scanamfile(amfile):
         else:
             p[0] = p[1]
 
+    def p_end(p):
+        """
+        end : end END
+            | END
+        """
+
     def p_error(p):
         print("syntax error at '%s'" % p.type,p.value)
         pass
@@ -192,7 +251,7 @@ def scanamfile(amfile):
     variables = yacc.parse(amfile)
     print(variables)
 
-file="/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am"
+file="/usr/portage/distfiles/svn-src/moc/trunk/decoder_plugins/Makefile.am"
 
 with open(file, encoding="utf-8", errors="replace") as inputfile:
     scanamfile(inputfile.read()) 
