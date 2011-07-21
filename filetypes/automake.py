@@ -1,6 +1,7 @@
 from ply import lex
 from ply import yacc
 import glob
+import os
 
 def scanamfile(amfile):
     """Scan automake (.am) file
@@ -249,9 +250,40 @@ def scanamfile(amfile):
     yacc.yacc()
 
     variables = yacc.parse(amfile)
-    print(variables)
+    return variables
 
-file="/usr/portage/distfiles/svn-src/moc/trunk/decoder_plugins/Makefile.am"
 
-with open(file, encoding="utf-8", errors="replace") as inputfile:
-    scanamfile(inputfile.read()) 
+def scan(amfile):
+    curdir = os.path.split(amfile)[0] + "/"
+    amlist = scanamfile(openfile(amfile))
+    print(amfile)
+    return sources_to_scan(amlist,curdir)
+
+def sources_to_scan(amlist,curdir):
+    sources = []
+    #perhaps use set() here to eliminate the possibilty of duplicates?
+    for variable in amlist[0]:
+        if variable.split("_")[-1] == "SOURCES":
+            sources += amlist[0][variable]
+
+    if "SUBDIRS" in amlist[0]:
+        for dir in amlist[0]["SUBDIRS"]:
+            sources += scan(curdir + dir + "/Makefile.am")
+
+    for lst in amlist[1]:
+        if lst[0] == "SUBDIRS":
+            for dir in lst[1]:
+                sources += scan(curdir + dir + "/Makefile.am")
+
+    for ifstatement in amlist[2]:
+        #don't care about if statements ATM!
+        sources += sources_to_scan(amlist[2][ifstatement],curdir)
+
+    return sources
+
+def openfile(ofile):
+    with open(ofile, encoding="utf-8", errors="replace") as inputfile:
+        return inputfile.read()
+
+scan("/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am")
+

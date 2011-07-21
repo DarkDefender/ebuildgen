@@ -364,7 +364,7 @@ def output(inputlst):
         if item[0] == "AC_ARG_ENABLE":
             name = convnames(item[1][0])
             if len(item[1]) == 2:
-                variables["enable_" + name] = [[],[]]
+                variables["enable_" + name] = {"AC_ARG_ENABLE" : ""}
             elif len(item[1]) == 3:
                 variables["enable_" + name] = [item[1][2],[]]
             else:
@@ -373,10 +373,10 @@ def output(inputlst):
         #remember to convert chars in the name of "item[1]" that is not
         #alfanumeric char to underscores _
 
-        if item[0] == "AC_ARG_WITH":
+        elif item[0] == "AC_ARG_WITH":
             name = convnames(item[1][0])
             if len(item[1]) == 2:
-                variables["with_" + name] = [[],[]]
+                variables["with_" + name] = {"AC_ARG_WITH" : ""}
             elif len(item[1]) == 3:
                 variables["with_" + name] = [item[1][2],[]]
             else:
@@ -386,14 +386,12 @@ def output(inputlst):
                 for pattern in item[0][1]:
                     if variable in pattern:
                         ifs += [parseif(item[0][1])]
-        elif "=" in item:
-            #print(item)
-            b = 0
+                        print(item)
 
     #for variable in variables:
         #print(variable)
         #print(variables[variable])
-    print(ifs)
+    #print(ifs)
 
 import re
 def convnames(string): #strip none alfanumeric chars and replace them with "_"

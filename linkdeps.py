@@ -1,5 +1,6 @@
 import os
 from subprocess import getstatusoutput
+from urllib.request import urlopen
 
 def deptopackage(dep,addpaths):
     """Converts supplied deps with additional include paths to portage packages
@@ -31,7 +32,47 @@ def deptopackage(dep,addpaths):
 
     print(package)
     if not package:
-        print("not matching package found withing the include paths!")
+        print("not matching package found within the include paths!")
         package = ["dummy"]
     return package
 
+def pfltopackage(dep,addpaths):
+    """This uses the online ply database to guess packages
+
+    """
+
+    incpaths = ["/usr/include", "/usr/local/include"]
+    incpaths += addpaths
+
+    url_lines = []
+    depname = os.path.split(dep)[1]
+    matching_packages = set()
+
+    url = urlopen("http://www.portagefilelist.de/index.php/Special:PFLQuery2?file="
+            + depname + "&searchfile=lookup&lookup=file&txt")
+
+    for line in url:
+        url_lines += [line.decode("utf-8").split()]
+
+    #First line does not contain any useful information, skip it
+    url_lines = url_lines[1:]
+    #structure of lines: [portage_category, package, path, file, misc, version]
+
+    for line in url_lines:
+        #check if path is correct
+        for path in incpaths:
+            if line[2] + line[3] == path + dep:
+                matching_packages.add(line[0] + "/" + line[1])
+
+    if len(matching_packages) > 1:
+        print("More than one matching package for dep found!\nPicking the last one...")
+
+    if not matching_packages:
+        print("not matching package found within the include paths!")
+        print("file not found was:" + dep)
+        print("a dummy dep will be placed in the ebuild, fix it!")
+        package = ["dummy"]
+
+    print([matching_packages.pop()])
+
+#pfltopackage("ncurses.h",[])
