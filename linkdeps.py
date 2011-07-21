@@ -68,8 +68,8 @@ def pfltopackage(dep,addpaths):
         print("More than one matching package for dep found!\nPicking the last one...")
 
     if not matching_packages:
-        print("not matching package found within the include paths!")
-        print("file not found was:" + dep)
+        print("no matching package found within the include paths!")
+        print("file not found was: " + dep)
         print("a dummy dep will be placed in the ebuild, fix it!")
         package = ["dummy"]
 
