@@ -359,7 +359,7 @@ from acif import parseif
 
 def output(inputlst):
     variables = dict()
-    ifs = []
+    iflst = []
     for item in inputlst:
         if item[0] == "AC_ARG_ENABLE":
             name = convnames(item[1][0])
@@ -385,13 +385,64 @@ def output(inputlst):
             for variable in variables:
                 for pattern in item[0][1]:
                     if variable in pattern:
-                        ifs += [parseif(item[0][1])]
-                        print(item)
+                        iflst += [parseif(item[0][1]),ifs(item[1],{})]
 
     #for variable in variables:
         #print(variable)
         #print(variables[variable])
-    #print(ifs)
+    print(iflst)
+
+def ifs(inputlst,variables):
+
+    for item in inputlst:
+        ac_check = 0 #is this an ac_check?
+        if item[0] == "AC_CHECK_HEADERS":
+            ac_check = 1
+        elif item[0] == "AC_CHECK_LIB":
+            ac_check = 2
+
+        if ac_check:
+            if not isinstance(item[1][0],list):
+                headers = convnames(item[1][0]).split()
+            else:
+                headers = []
+                for header in item[1][0]:
+                    headers += convnames(header)
+
+            for header in headers:
+                if ac_check == 1:
+                    variables["ac_cv_header_" + header] = "yes"
+                if ac_check == 2:
+                    variables["ac_cv_lib_" + header] = "yes"
+
+            if len(item[1]) > 2:
+                if isinstance(item[1][2],list):
+                    variables.update(ifs(item[1][2], variables))
+                else:
+                    variables.update(ifs(scanacfile(item[1][2].strip("[]")), variables))
+
+        elif isinstance(item[0],list): #if statement
+            variables.update(ifs(item[1],variables))
+
+        elif item[0] == "AC_DEFINE":
+            if len(item[1]) == 1:
+                variables.update({item[1][0].strip("[]") : "1"})
+            else:
+                variables.update({item[1][0].strip("[]") : item[1][1]})
+
+        elif "=" in item:
+            (var,items) = item.split("=")
+            compitems = []
+            for itm in items.strip('"').strip("'").split():
+                if itm[0] == "$":
+                    if itm[1:] in variables:
+                        compitems += variables[itm[1:]]
+
+                else:
+                    compitems += [itm]
+            variables[var] = compitems
+
+    return variables
 
 import re
 def convnames(string): #strip none alfanumeric chars and replace them with "_"
