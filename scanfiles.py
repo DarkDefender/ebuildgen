@@ -3,6 +3,8 @@ import glob
 from filetypes.ctypefiles import scanincludes
 from filetypes.makefiles import scanmakefile
 from filetypes.makefilecom import expand
+from filetypes.autoconf import scanac
+from filetypes.automake import initscan
 
 def scandirfor(dir, filetypes):
     """Scans recursivly the supplied dir for provided filetypes.
@@ -65,6 +67,50 @@ def scanmakefiledeps(makefile):
     os.chdir(olddir)
     return filestoscan,binaries,incflags,targets
 
+def scanautotoolsdeps(acfile,amfile):
+    """Scans autoconf file for useflags and the automake file in the same dir.
+
+    Scans the provided autoconf file and then looks for a automakefile in the
+    same dir. Autoconf scan returns a dict with useflags and a list with variables
+    that gets defined by those useflags.
+
+    Call the automake scan with the am file (that is in the same dir as the ac file)
+    and the list of variables from the autoconf scan and it will return a list of
+    default source files and a dict of files that gets pulled in by the useflag it
+    returns.
+    """
+    #these are not really useflags yet. So perhaps change name?
+    useflags, iflst = scanac(openfile(acfile))
+    srcfiles, src_useflag = initscan(amfile, iflst)
+
+    #standard includes
+    includes = scanfilelist(srcfiles)
+
+    def inter_useflag(uselst):
+        if uselst[1] == "yes" or uselst[1] == "!no":
+            usearg = uselst[0]
+        elif uselst[1] == "no" or uselst[1] == "!yes":
+            usearg = "!" + uselst[1]
+        else:
+            usearg = uselst[0] + "=" + uselst[1]
+
+        return usearg
+
+    #useflag includes
+    useargs = {}
+    for src in src_useflag:
+        usearg = inter_useflag(src_useflag[src])
+        if usearg in useargs:
+            useargs[usearg] += [src]
+        else:
+            useargs[usearg] = [src]
+
+    for usearg in useargs:
+        useargs[usearg] = scanfilelist(useargs[usearg])
+
+    print(useargs)
+    #print(includes)
+
 def scanfilelist(filelist):
     """ Scan files in filelist for #includes
 
@@ -79,6 +125,7 @@ def scanfilelist(filelist):
     inclst = [global_hfiles,local_hfiles,{}]
 
     for file in filelist:
+        #print(file)
         filestring = openfile(file)
         if not filestring == None:
             inclst = scanincludes(filestring,inclst,os.path.split(file)[0])
@@ -111,3 +158,6 @@ def openfile(file):
             return inputfile.read()
     except IOError:
         print('cannot open', file)
+
+#scanautotoolsdeps("/usr/portage/distfiles/svn-src/moc/trunk/configure.in","/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am")
+print(scanfilelist(["/usr/portage/distfiles/svn-src/moc/trunk/decoder_plugins/sidplay2/sidplay2.h"]))

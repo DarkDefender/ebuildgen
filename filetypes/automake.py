@@ -72,7 +72,6 @@ def scanamfile(amfile):
 
     def t_CVAR(t): #configure variable
         r"@.*?@" #not greedy
-        t.value = t.value.strip("@")
         return t
 
     def t_MVAR(t): #makefile variable
@@ -252,38 +251,74 @@ def scanamfile(amfile):
     variables = yacc.parse(amfile)
     return variables
 
+def initscan(amfile,iflst):
+    useflag_sources = {}  #{source: [useflag, value]}
 
-def scan(amfile):
-    curdir = os.path.split(amfile)[0] + "/"
-    amlist = scanamfile(openfile(amfile))
-    print(amfile)
-    return sources_to_scan(amlist,curdir)
+    def scan(amfile):
+        curdir = os.path.split(amfile)[0] + "/"
+        amlist = scanamfile(openfile(amfile))
+        #print(amfile)
 
-def sources_to_scan(amlist,curdir):
-    sources = []
-    #perhaps use set() here to eliminate the possibilty of duplicates?
-    for variable in amlist[0]:
-        if variable.split("_")[-1] == "SOURCES":
-            sources += amlist[0][variable]
+        def sources_to_scan(amlist,curdir):
+            sources = []
+            extra_sources = []
+            #perhaps use set() here to eliminate the possibilty of duplicates?
+            for variable in amlist[0]:
+                if variable.split("_")[-1] == "SOURCES":
+                    if variable.split("_")[0] == "EXTRA":
+                        extra_sources += amlist[0][variable]
+                    else:
+                        sources += amlist[0][variable]
 
-    if "SUBDIRS" in amlist[0]:
-        for dir in amlist[0]["SUBDIRS"]:
-            sources += scan(curdir + dir + "/Makefile.am")
+                if variable.split("_")[-1] == "LDADD":
+                    for item in amlist[0][variable]:
+                        if item[0] == "@" and item[-1] == "@":
+                            for ifstate in iflst:
+                                if item.strip("@") in ifstate[1]:
+                                    for file in ifstate[1][item.strip("@")]:
+                                        for src in extra_sources:
+                                            if file.split(".")[0] == src.split(".")[0]:
+                                                useflag_sources.update({curdir + src : ifstate[0]})
 
-    for lst in amlist[1]:
-        if lst[0] == "SUBDIRS":
-            for dir in lst[1]:
-                sources += scan(curdir + dir + "/Makefile.am")
+                        for src in extra_sources:
+                            if item.split(".")[0] == src.split(".")[0]:
+                                sources += [src]
 
-    for ifstatement in amlist[2]:
-        #don't care about if statements ATM!
-        sources += sources_to_scan(amlist[2][ifstatement],curdir)
+            if "SUBDIRS" in amlist[0]:
+                for dir in amlist[0]["SUBDIRS"]:
+                    sources += scan(curdir + dir + "/Makefile.am")
 
-    return sources
+            for lst in amlist[1]:
+                if lst[0] == "SUBDIRS":
+                    for dir in lst[1]:
+                        sources += scan(curdir + dir + "/Makefile.am")
+
+            for ifstatement in amlist[2]:
+                #print(ifstatement)
+                for item in iflst:
+                    if ifstatement.lstrip("!") in item[1]:
+                        if ifstatement[0] == "!":
+                            if item[1][ifstatement.lstrip("!")] == "false":
+                                for src in sources_to_scan(amlist[2][ifstatement],curdir):
+                                    useflag_sources.update({src : item[0]})
+
+                        elif item[1][ifstatement] == "true":
+                            for src in sources_to_scan(amlist[2][ifstatement],curdir):
+                                useflag_sources.update({src : item[0]})
+
+            #add filepath
+            dirsources = []
+            for source in sources:
+                if os.path.split(source)[0] == "":
+                    dirsources += [curdir + source]
+                else:
+                    dirsources += [source]
+
+            return dirsources
+
+        return sources_to_scan(amlist,curdir)
+    return scan(amfile),useflag_sources
 
 def openfile(ofile):
     with open(ofile, encoding="utf-8", errors="replace") as inputfile:
         return inputfile.read()
-
-scan("/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am")
-

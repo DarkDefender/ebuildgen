@@ -122,6 +122,16 @@ def scanincludes(string,inclst,curdir):
             ifdef[p[1]] = p[2]
             p[0] = [set(),set(),ifdef]
 
+    def p_ifdefempty(p):
+        """
+        includes : includes IFDEF ENDIF
+                 | IFDEF ENDIF
+        """
+        if len(p) == 4:
+            p[0] = p[1]
+        else:
+            p[0] = [set(),set(),{}]
+
     def p_ginc(p):
         "includes : ginc"
         globinc = set()
@@ -146,7 +156,7 @@ def scanincludes(string,inclst,curdir):
         p[0] = p[1]
 
     def p_error(p):
-        #print("syntax error at '%s'" % p.type)
+        print("syntax error at '%s'" % p.type)
         pass
 
     yacc.yacc()
@@ -161,7 +171,7 @@ def scanincludes(string,inclst,curdir):
 def islocalinc(inc, curdir):
     """Checks if this is a local include
 
-    Checks if the file can be found with the path the is supplied.
+    Checks if the file can be found with the path that is supplied.
     If not this is probably a global include and thus return False
     """
 

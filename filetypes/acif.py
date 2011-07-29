@@ -122,14 +122,15 @@ def parseif(ifoptions):
                | NONZERO OPT
                | OPT
         """
-        if p[2] == "=":
-            varstr = p[1].split("$")
-            p[0] = [varstr[1],p[3][len(varstr[0]):]]
-            #[VARIABLEname,value to pass test]
+        if len(p) == 4:
+            if p[2] == "=":
+                varstr = p[1].split("$")
+                p[0] = [varstr[1],p[3][len(varstr[0]):]]
+                #[VARIABLEname,value to pass test]
 
-        elif p[2] == "!=":
-            varstr = p[1].split("$")
-            p[0] = [varstr[1],"!" + p[3][len(varstr[0]):]]
+            elif p[2] == "!=":
+                varstr = p[1].split("$")
+                p[0] = [varstr[1],"!" + p[3][len(varstr[0]):]]
 
         else:
             varstr = p[len(p)-1].split("$")[1]

@@ -355,7 +355,7 @@ def scanacfile(acfile):
     items = yacc.parse(acfile)
     return items
 
-from acif import parseif
+from filetypes.acif import parseif
 
 def output(inputlst):
     variables = dict()
@@ -372,6 +372,7 @@ def output(inputlst):
 
         #remember to convert chars in the name of "item[1]" that is not
         #alfanumeric char to underscores _
+        #Done with convnames!
 
         elif item[0] == "AC_ARG_WITH":
             name = convnames(item[1][0])
@@ -385,12 +386,22 @@ def output(inputlst):
             for variable in variables:
                 for pattern in item[0][1]:
                     if variable in pattern:
-                        iflst += [parseif(item[0][1]),ifs(item[1],{})]
+                        iflst += [[parseif(item[0][1]),ifs(item[1],{})]]
+
+        elif item[0] == "AM_CONDITIONAL":
+            var = item[1][0].strip("[]")
+            cond = parseif(item[1][1].strip("[]").split())
+            for if_state in iflst:
+                if cond[0] in if_state[1]:
+                    if cond[1] == "!" or cond[1] == if_state[1][cond[0]]:
+                        #"!" == not zero/defined, "" zero/not defined
+                        if_state[1][var] = "true"
 
     #for variable in variables:
         #print(variable)
         #print(variables[variable])
-    print(iflst)
+    #print(iflst)
+    return variables,iflst
 
 def ifs(inputlst,variables):
 
@@ -400,6 +411,8 @@ def ifs(inputlst,variables):
             ac_check = 1
         elif item[0] == "AC_CHECK_LIB":
             ac_check = 2
+        elif item[0] == "PKG_CHECK_MODULES":
+            ac_check = 3
 
         if ac_check:
             if not isinstance(item[1][0],list):
@@ -433,6 +446,7 @@ def ifs(inputlst,variables):
         elif "=" in item:
             (var,items) = item.split("=")
             compitems = []
+            #Fix "´" aka exec shell commad comments!
             for itm in items.strip('"').strip("'").split():
                 if itm[0] == "$":
                     if itm[1:] in variables:
@@ -451,7 +465,6 @@ def convnames(string): #strip none alfanumeric chars and replace them with "_"
     newstr = re.sub(pattern, "_", string)
     return newstr
 
-file="configure.in"
-
-with open(file, encoding="utf-8", errors="replace") as inputfile:
-    output(scanacfile(inputfile.read()))
+#this is no a good name, come up with a better one!
+def scanac(acfile):
+    return output(scanacfile(acfile))
