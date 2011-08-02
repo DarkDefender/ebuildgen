@@ -253,6 +253,8 @@ def scanamfile(amfile):
 
 def initscan(amfile,iflst):
     useflag_sources = {}  #{source: [useflag, value]}
+    incflag_sources = {}  #{source: [include flags]}
+    top_dir = os.path.split(amfile)[0] + "/"
 
     def scan(amfile):
         curdir = os.path.split(amfile)[0] + "/"
@@ -260,6 +262,7 @@ def initscan(amfile,iflst):
         #print(amfile)
 
         def sources_to_scan(amlist,curdir):
+            incflags = []
             sources = []
             extra_sources = []
             #perhaps use set() here to eliminate the possibilty of duplicates?
@@ -278,11 +281,22 @@ def initscan(amfile,iflst):
                                     for file in ifstate[1][item.strip("@")]:
                                         for src in extra_sources:
                                             if file.split(".")[0] == src.split(".")[0]:
-                                                useflag_sources.update({curdir + src : ifstate[0]})
+                                                useflag_sources[curdir + src] = ifstate[0]
+                                                incflag_sources[curdir + src] = incflags
 
                         for src in extra_sources:
                             if item.split(".")[0] == src.split(".")[0]:
                                 sources += [src]
+
+                if variable.split("_")[-1] == "CFLAGS":
+                    for item in amlist[0][variable]:
+                        if item[:2] == "-I":
+                            if item[2:] == "$(top_srcdir)" or item[2:] == "$(srcdir)":
+                                incflags += [top_dir]
+                            elif item[2] == "/":
+                                incflags += [item[2:]]
+                            else:
+                                incflags += [curdir + item[2:]]
 
             if "SUBDIRS" in amlist[0]:
                 for dir in amlist[0]["SUBDIRS"]:
@@ -291,7 +305,7 @@ def initscan(amfile,iflst):
             for lst in amlist[1]:
                 if lst[0] == "SUBDIRS":
                     for dir in lst[1]:
-                        sources += scan(curdir + dir + "/Makefile.am")
+                      sources += scan(curdir + dir + "/Makefile.am")
 
             for ifstatement in amlist[2]:
                 #print(ifstatement)
@@ -300,24 +314,25 @@ def initscan(amfile,iflst):
                         if ifstatement[0] == "!":
                             if item[1][ifstatement.lstrip("!")] == "false":
                                 for src in sources_to_scan(amlist[2][ifstatement],curdir):
-                                    useflag_sources.update({src : item[0]})
+                                    useflag_sources[src] = item[0]
 
                         elif item[1][ifstatement] == "true":
                             for src in sources_to_scan(amlist[2][ifstatement],curdir):
-                                useflag_sources.update({src : item[0]})
+                                useflag_sources[src] = item[0]
 
             #add filepath
             dirsources = []
             for source in sources:
                 if os.path.split(source)[0] == "":
                     dirsources += [curdir + source]
+                    incflag_sources[curdir + source] = incflags
                 else:
                     dirsources += [source]
 
             return dirsources
 
         return sources_to_scan(amlist,curdir)
-    return scan(amfile),useflag_sources
+    return scan(amfile),useflag_sources,incflag_sources
 
 def openfile(ofile):
     with open(ofile, encoding="utf-8", errors="replace") as inputfile:

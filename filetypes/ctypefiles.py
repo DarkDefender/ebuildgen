@@ -4,7 +4,7 @@ from ply import yacc
 
 #lex stuff begins here
 
-def scanincludes(string,inclst,curdir):
+def scanincludes(string,inclst,curdir,incpaths):
     """Scan ctype files for #includes
 
     Adds and returns new includes to the supplied include list
@@ -103,7 +103,7 @@ def scanincludes(string,inclst,curdir):
         """
         includes : includes linc
         """
-        if islocalinc(p[2],curdir):
+        if islocalinc(p[2],curdir,incpaths):
             p[1][1].add(p[2])
         else:
             p[1][0].add(p[2])
@@ -142,7 +142,7 @@ def scanincludes(string,inclst,curdir):
         "includes : linc"
         locinc = set()
         locinc.add(p[1])
-        if islocalinc(p[1], curdir):
+        if islocalinc(p[1], curdir, incpaths):
             p[0] = [set(),locinc,{}]
         else:
             p[0] = [locinc,set(),{}]
@@ -168,18 +168,19 @@ def scanincludes(string,inclst,curdir):
     newinclst = addnewincludes(newinclst,inclst)
     return(newinclst)
 
-def islocalinc(inc, curdir):
+def islocalinc(inc, curdir, incpaths):
     """Checks if this is a local include
 
     Checks if the file can be found with the path that is supplied.
     If not this is probably a global include and thus return False
     """
+    incpaths += [curdir + "/"]
 
-    if glob.glob(curdir + "/" + inc) == []:
-        return False
-    else:
-        return True
+    for incpath in incpaths:
+        if not glob.glob(incpath + inc) == []:
+            return True
 
+    return False
 
 def addnewincludes(inclist1,inclist2):
     """Adds new includes to the first inclist and return it

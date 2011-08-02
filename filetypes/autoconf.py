@@ -357,7 +357,7 @@ def scanacfile(acfile):
 
 from filetypes.acif import parseif
 
-def output(inputlst):
+def output(inputlst,topdir):
     variables = dict()
     iflst = []
     for item in inputlst:
@@ -396,6 +396,11 @@ def output(inputlst):
                     if cond[1] == "!" or cond[1] == if_state[1][cond[0]]:
                         #"!" == not zero/defined, "" zero/not defined
                         if_state[1][var] = "true"
+
+        elif item[0] == "m4_include":
+            newvar,newiflst = output(scanacfile(openfile(topdir + item[1])),topdir)
+            variables.update(newvar)
+            iflst += newiflst
 
     #for variable in variables:
         #print(variable)
@@ -466,5 +471,9 @@ def convnames(string): #strip none alfanumeric chars and replace them with "_"
     return newstr
 
 #this is no a good name, come up with a better one!
-def scanac(acfile):
-    return output(scanacfile(acfile))
+def scanac(acfile,topdir):
+    return output(scanacfile(acfile),topdir)
+
+def openfile(ofile):
+    with open(ofile, encoding="utf-8", errors="replace") as inputfile:
+        return inputfile.read()  

@@ -80,11 +80,14 @@ def scanautotoolsdeps(acfile,amfile):
     returns.
     """
     #these are not really useflags yet. So perhaps change name?
-    useflags, iflst = scanac(openfile(acfile))
-    srcfiles, src_useflag = initscan(amfile, iflst)
+    topdir = os.path.split(amfile)[0] + "/"
+    useflags, iflst = scanac(openfile(acfile),topdir)
+    srcfiles, src_useflag, src_incflag = initscan(amfile, iflst)
 
+    #print(iflst)
+    #print(srcfiles)
     #standard includes
-    includes = scanfilelist(srcfiles)
+    includes = scanfilelist(srcfiles,src_incflag)
 
     def inter_useflag(uselst):
         if uselst[1] == "yes" or uselst[1] == "!no":
@@ -106,12 +109,12 @@ def scanautotoolsdeps(acfile,amfile):
             useargs[usearg] = [src]
 
     for usearg in useargs:
-        useargs[usearg] = scanfilelist(useargs[usearg])
+        useargs[usearg] = scanfilelist(useargs[usearg],src_incflag)
 
     print(useargs)
-    #print(includes)
+    print(includes)
 
-def scanfilelist(filelist):
+def scanfilelist(filelist,src_incflag):
     """ Scan files in filelist for #includes
 
     returns a includes list with this structure:
@@ -126,9 +129,10 @@ def scanfilelist(filelist):
 
     for file in filelist:
         #print(file)
+        incpaths = src_incflag[file]
         filestring = openfile(file)
         if not filestring == None:
-            inclst = scanincludes(filestring,inclst,os.path.split(file)[0])
+            inclst = scanincludes(filestring,inclst,os.path.split(file)[0],incpaths)
 
     return(inclst)
 
@@ -159,5 +163,5 @@ def openfile(file):
     except IOError:
         print('cannot open', file)
 
-#scanautotoolsdeps("/usr/portage/distfiles/svn-src/moc/trunk/configure.in","/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am")
-print(scanfilelist(["/usr/portage/distfiles/svn-src/moc/trunk/decoder_plugins/sidplay2/sidplay2.h"]))
+scanautotoolsdeps("/usr/portage/distfiles/svn-src/moc/trunk/configure.in","/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am")
+#print(scanfilelist(["/usr/portage/distfiles/svn-src/moc/trunk/decoder_plugins/sidplay2/sidplay2.h"]))
