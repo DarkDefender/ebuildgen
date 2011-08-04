@@ -111,8 +111,9 @@ def scanautotoolsdeps(acfile,amfile):
     for usearg in useargs:
         useargs[usearg] = scanfilelist(useargs[usearg],src_incflag)
 
-    print(useargs)
-    print(includes)
+    #print(useargs)
+    #print(includes)
+    return useflags,includes,useargs
 
 def scanfilelist(filelist,src_incflag):
     """ Scan files in filelist for #includes
@@ -143,14 +144,23 @@ def scanproject(dir,projecttype):
     autotools? makefile?
     """
     if projecttype == "guess":
-        filestolookfor = ["Makefile","makefile"] #add more later
+        filestolookfor = ["Makefile","makefile",
+	"configure.ac","configure.in"] #add more later
     elif projecttype == "makefile":
         filestolookfor = ["Makefile","makefile"]
+    elif projecttype == "autotools":
+        filestolookfor = ["configure.ac","configure.in"]
 
     mfile = scandirfor(dir, filestolookfor)[0] #use first file found
     print(mfile)
-    (scanlist,binaries,incflags,targets) = scanmakefiledeps(mfile)
-    return scanfilelist(scanlist),binaries,incflags,targets
+    if mfile == "Makefile" or mfile == "makefile":
+        (scanlist,binaries,incflags,targets) = scanmakefiledeps(mfile)
+	#this is broken now... rewrite
+        return scanfilelist(scanlist),binaries,incflags,targets
+
+    else:
+        amfile = os.path.split(mfile)[0] + "/" + "Makefile.am"
+        return scanautotoolsdeps(mfile,amfile)
 
 def openfile(file):
     """Open a file and return the content as a string.
@@ -162,6 +172,3 @@ def openfile(file):
             return inputfile.read()
     except IOError:
         print('cannot open', file)
-
-scanautotoolsdeps("/usr/portage/distfiles/svn-src/moc/trunk/configure.in","/usr/portage/distfiles/svn-src/moc/trunk/Makefile.am")
-#print(scanfilelist(["/usr/portage/distfiles/svn-src/moc/trunk/decoder_plugins/sidplay2/sidplay2.h"]))

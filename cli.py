@@ -52,17 +52,30 @@ else:
     srcdir = args.dir
     dltype = "www"
 
-(inclst,binaries,incpaths,targets) = scanfiles.scanproject(srcdir,"makefile")
-packages = set()
-print(binaries)
+(iuse,inclst,useargs) = scanfiles.scanproject(srcdir,"autotools")
+targets = [["install"]]
+binaries = []
+gpackages = set()
 for dep in inclst[0]:
-    packages.add(linkdeps.deptopackage(dep,incpaths)[0])
+    gpackages.add(linkdeps.deptopackage(dep,[])[0])
+#print(gpackages)
 
-ebuildgen.genebuild([],packages,dltype,args.dir,targets,binaries)
+usedeps = {}
+for use in useargs:
+    packages = set()
+    for dep in useargs[use][0]:
+        newpack = linkdeps.deptopackage(dep,[])[0]
+        if not newpack in gpackages:
+            packages.add(newpack)
+    usedeps[use] = packages
+
+#print(usedeps)
+#print(iuse)        
+ebuildgen.genebuild(iuse,gpackages,usedeps,dltype,args.dir,targets,binaries)
 
 if args.ginc == args.linc == args.ifdef == args.quiet == False:
     print(inclst)
-    print(packages)
+    print(gpackages)
 
 if args.ginc:
     print(inclst[0])

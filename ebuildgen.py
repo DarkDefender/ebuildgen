@@ -9,7 +9,7 @@ eclass = {
 
 arch = getstatusoutput("portageq envvar ARCH")[1]
 
-def genebuild(iuse,deps,dltype,adress,targets,binaries):
+def genebuild(iuse,deps,usedeps,dltype,adress,targets,binaries):
     """This function starts the ebuild generation.
 
     You have to provide the following args in order:
@@ -22,7 +22,7 @@ def genebuild(iuse,deps,dltype,adress,targets,binaries):
     """
 
     installmethod = guessinstall(targets,binaries)
-    outstr = outputebuild(iuse,deps,dltype,adress,installmethod)
+    outstr = outputebuild(iuse,deps,usedeps,dltype,adress,installmethod)
     f = open("/tmp/workfile.ebuild","w")
     f.write(outstr)
     f.close()
@@ -47,7 +47,7 @@ def guessinstall(targets,binaries):
 
     return returnlst
 
-def outputebuild(iuse,deps,dltype,adress,installmethod):
+def outputebuild(iuse,deps,usedeps,dltype,adress,installmethod):
     """Used to generate the text for the ebuild to output
 
     Generates text with the help of the supplied variables
@@ -83,7 +83,7 @@ def outputebuild(iuse,deps,dltype,adress,installmethod):
             ]
     iusestr = 'IUSE="'
     for flag in iuse:
-        iusestr += (flag + " ")
+        iusestr += (flag.split("_")[1] + " ")
     iusestr += '"\n'
 
     text.append(iusestr)
@@ -91,6 +91,19 @@ def outputebuild(iuse,deps,dltype,adress,installmethod):
     depstr = 'DEPEND="'
     for dep in deps:
         depstr += (dep + "\n\t")
+
+    for use in usedeps:
+        #check if packagelist is empty
+        if usedeps[use]:
+            if use[0] == "!":
+                depstr += "!" + use.split("_")[1] + "? ( "
+            else:
+                depstr += use.split("_")[1] + "? ( "
+
+            for dep in usedeps[use]:
+                depstr += dep +"\n\t\t"
+            depstr = depstr[:-3]
+            depstr += " )\n\t"
 
     depstr = depstr[:-2] + '"'
     text.append(depstr)

@@ -3,6 +3,10 @@ from subprocess import getstatusoutput
 from urllib.request import urlopen
 
 def deptopackage(dep,addpaths):
+    #return pfltopackage(dep,addpaths)
+    return qfiletopackage(dep,addpaths)
+
+def qfiletopackage(dep,addpaths):
     """Converts supplied deps with additional include paths to portage packages
 
     This uses qfile to quess which package certain files belongs to.
@@ -15,25 +19,25 @@ def deptopackage(dep,addpaths):
 
     (statuscode,packagestr) = getstatusoutput("qfile -C " + depname)
     if not statuscode == 0:
-        print("something went wrong...") #have it print a more useful error!
-        return
+        package = pfltopackage(dep,addpaths)
 
-    packagelst = packagestr.split()
-    package = []
-    n = 0
-    for depfile in packagelst[1::2]:
-        for incpath in incpaths:
-            if depfile.strip("()") == (incpath + "/" + dep):
-                package.append(packagelst[n])
-        n += 2
+    else:
+        packagelst = packagestr.split()
+        package = []
+        n = 0
+        for depfile in packagelst[1::2]:
+            for incpath in incpaths:
+                if depfile.strip("()") == (incpath + "/" + dep):
+                    package.append(packagelst[n])
+            n += 2
 
-    if len(package) > 1:
-        print("more than one matching package where found!")
+        if len(package) > 1:
+            print("more than one matching package where found!")
+
+        if not package:
+            package = pfltopackage(dep,addpaths)
 
     print(package)
-    if not package:
-        print("not matching package found within the include paths!")
-        package = ["dummy"]
     return package
 
 def pfltopackage(dep,addpaths):
@@ -41,6 +45,7 @@ def pfltopackage(dep,addpaths):
 
     """
 
+    print(dep)
     incpaths = ["/usr/include", "/usr/local/include"]
     incpaths += addpaths
 
@@ -61,7 +66,7 @@ def pfltopackage(dep,addpaths):
     for line in url_lines:
         #check if path is correct
         for path in incpaths:
-            if line[2] + line[3] == path + dep:
+            if line[2] + "/" + line[3] == path + "/" + dep:
                 matching_packages.add(line[0] + "/" + line[1])
 
     if len(matching_packages) > 1:
@@ -71,8 +76,8 @@ def pfltopackage(dep,addpaths):
         print("no matching package found within the include paths!")
         print("file not found was: " + dep)
         print("a dummy dep will be placed in the ebuild, fix it!")
-        package = ["dummy"]
+        matching_packages = ["dummy_for_" + dep]
 
-    print([matching_packages.pop()])
+    return [matching_packages.pop()]
 
 #pfltopackage("ncurses.h",[])
