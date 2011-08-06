@@ -59,7 +59,7 @@ def outputebuild(iuse,deps,usedeps,dltype,adress,installmethod):
             '# $Header: $',
             ''
             ]
-    inheritstr = 'inherit ' + eclass[dltype]
+    inheritstr = 'inherit ' + eclass[dltype] + ' autotools'
     text.append(inheritstr)
 
     text += [
@@ -105,11 +105,27 @@ def outputebuild(iuse,deps,usedeps,dltype,adress,installmethod):
             depstr = depstr[:-3]
             depstr += " )\n\t"
 
-    depstr = depstr[:-2] + '"'
+    depstr = depstr[:-2] + '"\nRDEPEND="${DEPEND}"'
     text.append(depstr)
 
     text += [
-            'RDEPEND="${DEPEND}"',
+            '',
+            'src_prepare() {',
+            '\teautoreconf',
+            '}',
+            ]
+
+    if iuse:
+        text += [
+                '',
+                'src_configure() {',
+                '\teconf \\',
+                ]
+        for use in iuse:
+            text += ['\t\t$(use_' + use.split("_")[0] + ' ' + use.split("_")[1] + ') \\']
+        text += ['}']
+
+    text += [
             '',
             'src_compile() {',
             '	emake || die "emake failed"',
