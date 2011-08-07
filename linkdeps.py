@@ -13,13 +13,19 @@ def qfiletopackage(dep,addpaths):
     """
 
     print(dep)
-    incpaths = ["/usr/include", "/usr/local/include"]
+    (statuscode,outstr) = getstatusoutput("`gcc -print-prog-name=cc1` -v ^C")
+    #"`gcc -print-prog-name=cc1plus` -v" for cpp
+    outlst = outstr.split("\n")
+    incpaths = []
+    for item in outlst:
+        if item[:2] == " /":
+            incpaths += [item[1:]]
     incpaths += addpaths
     depname = os.path.split(dep)[1]
 
     (statuscode,packagestr) = getstatusoutput("qfile -C " + depname)
     if not statuscode == 0:
-        package = pfltopackage(dep,addpaths)
+        package = pfltopackage(dep,incpaths)
 
     else:
         packagelst = packagestr.split()
@@ -35,7 +41,7 @@ def qfiletopackage(dep,addpaths):
             print("more than one matching package where found!")
 
         if not package:
-            package = pfltopackage(dep,addpaths)
+            package = pfltopackage(dep,incpaths)
 
     print(package)
     return package
@@ -46,8 +52,7 @@ def pfltopackage(dep,addpaths):
     """
 
     print(dep)
-    incpaths = ["/usr/include", "/usr/local/include"]
-    incpaths += addpaths
+    incpaths = addpaths
 
     url_lines = []
     depname = os.path.split(dep)[1]
@@ -80,4 +85,4 @@ def pfltopackage(dep,addpaths):
 
     return [matching_packages.pop()]
 
-#pfltopackage("ncurses.h",[])
+#qfiletopackage("jack/ringbuffer.h",[])
