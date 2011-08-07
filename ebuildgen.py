@@ -123,7 +123,9 @@ def outputebuild(iuse,deps,usedeps,dltype,adress,installmethod):
                 ]
         for use in iuse:
             text += ['\t\t$(use_' + use.split("_")[0] + ' ' + use.split("_")[1] + ') \\']
-        text += ['}']
+
+        #add \n here because the ebuild will fail if there is no extra newline between '\' and '}'
+        text += ['\n}']
 
     text += [
             '',

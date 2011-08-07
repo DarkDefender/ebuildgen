@@ -59,6 +59,9 @@ gpackages = set()
 for dep in inclst[0]:
     gpackages.add(linkdeps.deptopackage(dep,[])[0])
 #print(gpackages)
+if "__cplusplus" in inclst[2]:
+    for dep in inclst[2]["__cplusplus"][0]:
+        gpackages.add(linkdeps.deptopackage(dep,[])[0])
 
 usedeps = {}
 for use in useargs:
@@ -67,10 +70,15 @@ for use in useargs:
         newpack = linkdeps.deptopackage(dep,[])[0]
         if not newpack in gpackages:
             packages.add(newpack)
+    if "__cplusplus" in useargs[use][2]:
+        for dep in useargs[use][2]["__cplusplus"][0]:
+            newpack = linkdeps.deptopackage(dep,[])[0]
+            if not newpack in gpackages:
+                packages.add(newpack)
     usedeps[use] = packages
 
 #print(usedeps)
-#print(iuse)        
+#print(iuse)
 ebuildgen.genebuild(iuse,gpackages,usedeps,dltype,args.dir,targets,binaries)
 
 if args.ginc == args.linc == args.ifdef == args.quiet == False:

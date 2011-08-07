@@ -38,7 +38,7 @@ def qfiletopackage(dep,addpaths):
             n += 2
 
         if len(package) > 1:
-            print("more than one matching package where found!")
+            print("more than one matching package were found!")
 
         if not package:
             package = pfltopackage(dep,incpaths)
