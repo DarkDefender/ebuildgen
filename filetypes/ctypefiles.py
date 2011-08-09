@@ -96,14 +96,18 @@ def scanincludes(string,inclst,curdir,incpaths):
         """
         includes : includes ginc
         """
-        p[1][0].add(p[2])
+        if islocalinc(p[2],curdir,incpaths):
+            p[1][1].add(p[2])
+        else:
+            p[1][0].add(p[2])
         p[0] = p[1]
 
     def p_lincludes(p):
         """
         includes : includes linc
         """
-        if islocalinc(p[2],curdir,incpaths):
+        locincpaths = incpaths + [curdir + "/"]
+        if islocalinc(p[2],curdir,locincpaths):
             p[1][1].add(p[2])
         else:
             p[1][0].add(p[2])
@@ -136,13 +140,17 @@ def scanincludes(string,inclst,curdir,incpaths):
         "includes : ginc"
         globinc = set()
         globinc.add(p[1])
-        p[0] = [globinc,set(),{}]
+        if islocalinc(p[1], curdir, incpaths):
+            p[0] = [set(),globinc,{}]
+        else:
+            p[0] = [globinc,set(),{}]
 
     def p_linc(p):
         "includes : linc"
         locinc = set()
         locinc.add(p[1])
-        if islocalinc(p[1], curdir, incpaths):
+        locincpaths = incpaths + [curdir + "/"]
+        if islocalinc(p[1], curdir, locincpaths):
             p[0] = [set(),locinc,{}]
         else:
             p[0] = [locinc,set(),{}]
@@ -174,11 +182,13 @@ def islocalinc(inc, curdir, incpaths):
     Checks if the file can be found with the path that is supplied.
     If not this is probably a global include and thus return False
     """
-    incpaths += [curdir + "/"]
 
     for incpath in incpaths:
-        if not glob.glob(incpath + inc) == []:
-            return True
+        #check if the path for a local inc is correct.
+        #The work dir is in /tmp.
+        if incpath[:4] == "/tmp":
+            if not glob.glob(incpath + inc) == []:
+                return True
 
     return False
 

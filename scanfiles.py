@@ -145,7 +145,7 @@ def scanproject(dir,projecttype):
     """
     if projecttype == "guess":
         filestolookfor = ["Makefile","makefile",
-	"configure.ac","configure.in"] #add more later
+    "configure.ac","configure.in"] #add more later
     elif projecttype == "makefile":
         filestolookfor = ["Makefile","makefile"]
     elif projecttype == "autotools":
@@ -155,7 +155,7 @@ def scanproject(dir,projecttype):
     print(mfile)
     if mfile == "Makefile" or mfile == "makefile":
         (scanlist,binaries,incflags,targets) = scanmakefiledeps(mfile)
-	#this is broken now... rewrite
+    #this is broken now... rewrite
         return scanfilelist(scanlist),binaries,incflags,targets
 
     else:

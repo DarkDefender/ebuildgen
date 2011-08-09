@@ -288,7 +288,7 @@ def initscan(amfile,iflst):
                             if item.split(".")[0] == src.split(".")[0]:
                                 sources += [src]
 
-                if variable.split("_")[-1] == "CFLAGS":
+                if variable.split("_")[-1] == "CFLAGS" or variable == "DEFAULT_INCLUDES":
                     for item in amlist[0][variable]:
                         if item[:2] == "-I":
                             if item[2:] == "$(top_srcdir)" or item[2:] == "$(srcdir)":
@@ -297,6 +297,9 @@ def initscan(amfile,iflst):
                                 incflags += [item[2:]]
                             else:
                                 incflags += [curdir + item[2:]]
+
+            if not "DEFAULT_INCLUDES" in amlist[0]:
+                incflags += [curdir,top_dir]
 
             if "SUBDIRS" in amlist[0]:
                 for dir in amlist[0]["SUBDIRS"]:
