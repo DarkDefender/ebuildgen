@@ -86,6 +86,7 @@ def scanautotoolsdeps(acfile,amfile):
 
     #print(iflst)
     #print(srcfiles)
+    #print(src_useflag)
     #standard includes
     includes = scanfilelist(srcfiles,src_incflag)
 
@@ -111,6 +112,14 @@ def scanautotoolsdeps(acfile,amfile):
     for usearg in useargs:
         useargs[usearg] = scanfilelist(useargs[usearg],src_incflag)
 
+    for ifdef in includes[2]:
+        for switch in iflst:
+            if ifdef in switch[1]:
+                usearg = inter_useflag(switch[0])
+                if usearg in useargs:
+                    useargs[usearg][0].update(includes[2][ifdef][0])
+                else:
+                    useargs[usearg] = includes[2][ifdef]
     #print(useargs)
     #print(includes)
     return useflags,includes,useargs

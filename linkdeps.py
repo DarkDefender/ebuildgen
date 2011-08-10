@@ -44,7 +44,10 @@ def qfiletopackage(dep,addpaths):
             package = pfltopackage(dep,incpaths)
 
     print(package)
-    return package
+    if package:
+        return package[0]
+    else:
+        return package
 
 def pfltopackage(dep,addpaths):
     """This uses the online ply database to guess packages
@@ -57,6 +60,7 @@ def pfltopackage(dep,addpaths):
     url_lines = []
     depname = os.path.split(dep)[1]
     matching_packages = set()
+    all_packages = set()
 
     url = urlopen("http://www.portagefilelist.de/index.php/Special:PFLQuery2?file="
             + depname + "&searchfile=lookup&lookup=file&txt")
@@ -69,6 +73,7 @@ def pfltopackage(dep,addpaths):
     #structure of lines: [portage_category, package, path, file, misc, version]
 
     for line in url_lines:
+        all_packages.add(line[0] + "/" + line[1])
         #check if path is correct
         for path in incpaths:
             if line[2] + "/" + line[3] == path + "/" + dep:
@@ -79,9 +84,16 @@ def pfltopackage(dep,addpaths):
 
     if not matching_packages:
         print("no matching package found within the include paths!")
-        print("file not found was: " + dep)
-        print("a dummy dep will be placed in the ebuild, fix it!")
-        matching_packages = ["dummy_for_" + dep]
+        if len(all_packages) == 1:
+            print("but only one package matches the headerfile, picking that one")
+            matching_packages = all_packages
+        elif all_packages:
+            print("file not found was: " + dep)
+            print("a dummy dep will be placed in the ebuild, fix it!")
+            matching_packages = ["dummy_for_" + dep]
+        else:
+            print("No package supplies the headerfile, ignoring...")
+            return []
 
     return [matching_packages.pop()]
 

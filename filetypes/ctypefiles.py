@@ -66,17 +66,17 @@ def scanincludes(string,inclst,curdir,incpaths):
         return t
 
     def t_GINCLUDE(t):
-        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+<.*\.h>"
-        t.value = t.value[8:].strip().strip("<>")
+        r"\#[ \t]*[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+<.*\.h>"
+        t.value = t.value[t.value.find("<"):].strip().strip("<>")
         return t
 
     def t_LINCLUDE(t):
-        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+\".*\.h\""
-        t.value = t.value[8:].strip().strip('""')
+        r"\#[ \t]*[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+\".*\.h\""
+        t.value = t.value[t.value.find('"'):].strip().strip('""')
         return t
 
     def t_BUNDLEINC(t):
-        r"\#[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+<.*>"
+        r"\#[ \t]*[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ \t]+<.*>"
         pass
 
     def t_ANY_error(t):
@@ -223,4 +223,7 @@ def addnewifdefs(dict1,dict2):
         dict1[name][0] = dict1[name][0] | dict2[name][0]
         dict1[name][1] = dict1[name][1] | dict2[name][1]
         dict1[name][2] = addnewifdefs(dict1[name][2],dict2[name][2])
+        dict2.pop(name)
+    for name in dict2:
+        dict1[name] = dict2[name]
     return(dict1)

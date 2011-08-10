@@ -57,23 +57,25 @@ targets = [["install"]]
 binaries = []
 gpackages = set()
 for dep in inclst[0]:
-    gpackages.add(linkdeps.deptopackage(dep,[])[0])
+    gpackages.add(linkdeps.deptopackage(dep,[]))
 #print(gpackages)
 if "__cplusplus" in inclst[2]:
     for dep in inclst[2]["__cplusplus"][0]:
-        gpackages.add(linkdeps.deptopackage(dep,[])[0])
+        newpack = linkdeps.deptopackage(dep,[])
+        if newpack:
+            gpackages.add(newpack)
 
 usedeps = {}
 for use in useargs:
     packages = set()
     for dep in useargs[use][0]:
-        newpack = linkdeps.deptopackage(dep,[])[0]
-        if not newpack in gpackages:
+        newpack = linkdeps.deptopackage(dep,[])
+        if newpack and not newpack in gpackages:
             packages.add(newpack)
     if "__cplusplus" in useargs[use][2]:
         for dep in useargs[use][2]["__cplusplus"][0]:
-            newpack = linkdeps.deptopackage(dep,[])[0]
-            if not newpack in gpackages:
+            newpack = linkdeps.deptopackage(dep,[])
+            if newpack and not newpack in gpackages:
                 packages.add(newpack)
     usedeps[use] = packages
 

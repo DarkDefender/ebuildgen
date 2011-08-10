@@ -412,7 +412,7 @@ def ifs(inputlst,variables):
 
     for item in inputlst:
         ac_check = 0 #is this an ac_check?
-        if item[0] == "AC_CHECK_HEADERS":
+        if item[0] == "AC_CHECK_HEADERS" or item[0] == "AC_CHECK_HEADER":
             ac_check = 1
         elif item[0] == "AC_CHECK_LIB":
             ac_check = 2
@@ -433,11 +433,16 @@ def ifs(inputlst,variables):
                 if ac_check == 2:
                     variables["ac_cv_lib_" + header] = "yes"
 
-            if len(item[1]) > 2:
+            if len(item[1]) > 2 and ac_check > 1:
                 if isinstance(item[1][2],list):
                     variables.update(ifs(item[1][2], variables))
                 else:
                     variables.update(ifs(scanacfile(item[1][2].strip("[]")), variables))
+            elif ac_check == 1 and len(item[1]) > 1:
+                if isinstance(item[1][1],list):
+                    variables.update(ifs(item[1][1], variables))
+                else:
+                    variables.update(ifs(scanacfile(item[1][1].strip("[]")), variables))
 
         elif isinstance(item[0],list): #if statement
             variables.update(ifs(item[1],variables))
@@ -476,4 +481,4 @@ def scanac(acfile,topdir):
 
 def openfile(ofile):
     with open(ofile, encoding="utf-8", errors="replace") as inputfile:
-        return inputfile.read()  
+        return inputfile.read()
