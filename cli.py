@@ -57,7 +57,9 @@ targets = [["install"]]
 binaries = []
 gpackages = set()
 for dep in inclst[0]:
-    gpackages.add(linkdeps.deptopackage(dep,[]))
+    newpack = linkdeps.deptopackage(dep,[])
+    if newpack:
+        gpackages.add(newpack)
 #print(gpackages)
 if "__cplusplus" in inclst[2]:
     for dep in inclst[2]["__cplusplus"][0]:

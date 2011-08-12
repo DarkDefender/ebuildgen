@@ -1,6 +1,7 @@
 import os
 from subprocess import getstatusoutput
 from urllib.request import urlopen
+import gentoopm
 
 def deptopackage(dep,addpaths):
     #return pfltopackage(dep,addpaths)
@@ -44,8 +45,15 @@ def qfiletopackage(dep,addpaths):
             package = pfltopackage(dep,incpaths)
 
     print(package)
+    #check if package exists
+    pm=gentoopm.get_package_manager()
     if package:
-        return package[0]
+        #does the package exist in this computers package manager?
+        if pm.stack.filter(package[0]):
+            return package[0]
+        else:
+            print("No package named: " + package[0] + " found localy, ignoring")
+            return []
     else:
         return package
 
