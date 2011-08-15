@@ -33,24 +33,24 @@ def cli():
 
     args = parser.parse_args()
 
-    #print(args.dir)
+    #print(args.url)
     #print(args.types)
 
     #inclst is a list of includes. First in it is global then local.
     if args.svn:
-        getsourcecode(args.dir,"svn")
+        getsourcecode(args.url,"svn")
         srcdir = "/tmp/ebuildgen/curproj"
         dltype = "svn"
     elif args.git:
-        getsourcecode(args.dir,"git")
+        getsourcecode(args.url,"git")
         srcdir = "/tmp/ebuildgen/curproj"
         dltype = "git"
     elif args.hg:
-        getsourcecode(args.dir,"hg")
+        getsourcecode(args.url,"hg")
         srcdir = "/tmp/ebuildgen/curproj"
         dltype = "hg"
     else:
-        srcdir = args.dir
+        srcdir = args.url
         dltype = "www"
 
     (iuse,inclst,useargs) = scanfiles.scanproject(srcdir,"autotools")
@@ -84,7 +84,7 @@ def cli():
 
     #print(usedeps)
     #print(iuse)
-    ebuildoutput.genebuild(iuse,gpackages,usedeps,dltype,args.dir,targets,binaries)
+    ebuildoutput.genebuild(iuse,gpackages,usedeps,dltype,args.url,targets,binaries)
 
     if args.ginc == args.linc == args.ifdef == args.quiet == False:
         print(inclst)
