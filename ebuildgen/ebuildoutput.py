@@ -57,14 +57,14 @@ def outputebuild(iuse,deps,usedeps,dltype,adress,installmethod):
             '# Copyright 1999-' + strftime("%Y") + ' Gentoo Foundation',
             '# Distributed under the terms of the GNU General Public License v2',
             '# $Header: $',
-            ''
+            '',
+            'EAPI=3',
+            '',
             ]
     inheritstr = 'inherit ' + eclass[dltype] + ' autotools'
     text.append(inheritstr)
 
     text += [
-            '',
-            'EAPI=3',
             '',
             'DESCRIPTION=""',
             'HOMEPAGE=""'
