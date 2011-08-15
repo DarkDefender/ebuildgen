@@ -23,7 +23,7 @@ def genebuild(iuse,deps,usedeps,dltype,adress,targets,binaries):
 
     installmethod = guessinstall(targets,binaries)
     outstr = outputebuild(iuse,deps,usedeps,dltype,adress,installmethod)
-    f = open("/tmp/workfile.ebuild","w")
+    f = open("/tmp/ebuildgen/generated.ebuild","w")
     f.write(outstr)
     f.close()
 

@@ -14,7 +14,7 @@ def qfiletopackage(dep,addpaths):
     """
 
     print(dep)
-    (statuscode,outstr) = getstatusoutput('echo "" | `gcc -print-prog-name=cc1` -v')
+    (statuscode,outstr) = getstatusoutput('echo "" | `gcc -print-prog-name=cc1` -v -q')
     #"`gcc -print-prog-name=cc1plus` -v" for cpp
     outlst = outstr.split("\n")
     incpaths = []

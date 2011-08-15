@@ -355,7 +355,7 @@ def scanacfile(acfile):
     items = yacc.parse(acfile)
     return items
 
-from filetypes.acif import parseif
+from ebuildgen.filetypes.acif import parseif
 
 def output(inputlst,topdir):
     variables = dict()

@@ -1,7 +1,7 @@
 from ply import lex
 from ply import yacc
 import glob
-from filetypes.makefilecom import expand
+from ebuildgen.filetypes.makefilecom import expand
 
 def scanmakefile(makefile):
     """Scan supplied makefile.

@@ -1,10 +1,10 @@
 import os
 import glob
-from filetypes.ctypefiles import scanincludes
-from filetypes.makefiles import scanmakefile
-from filetypes.makefilecom import expand
-from filetypes.autoconf import scanac
-from filetypes.automake import initscan
+from ebuildgen.filetypes.ctypefiles import scanincludes
+from ebuildgen.filetypes.makefiles import scanmakefile
+from ebuildgen.filetypes.makefilecom import expand
+from ebuildgen.filetypes.autoconf import scanac
+from ebuildgen.filetypes.automake import initscan
 
 def scandirfor(dir, filetypes):
     """Scans recursivly the supplied dir for provided filetypes.
