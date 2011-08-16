@@ -1,5 +1,7 @@
 from subprocess import call
 import sys
+import glob
+import shutil
 
 cmdlineget = {
         "svn" : "svn checkout ",
@@ -14,6 +16,10 @@ def getsourcecode(adress,repotype):
     Supply the adress to the source code and repo type
     """
     callstr = cmdlineget[repotype]
+
+    if glob.glob("/tmp/ebuildgen/curproj"):
+        #this is might not be the best solution
+        shutil.rmtree("/tmp/ebuildgen/curproj")
 
     try:
         retcode = call(callstr + adress + " /tmp/ebuildgen/curproj",shell=True)
