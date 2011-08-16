@@ -1,0 +1,5 @@
+This is the ebuild generator project.
+
+Run "genebuild" to execute the program.
+
+The sources files is in the dir "ebuildgen" and the ebuild for the project is in the dir "overlay"
