@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header$ -->
+
+<guide>
+<title>Ebuild Generator GSoC 2011</title>
+
+<author title="Author">
+   <mail link="darkdefende@gmail.com">Sebastian Parborg</mail>
+</author>
+
+<abstract>
+  Generate ebuilds for autotools C/C++ based projects. The main goal is to
+  help users write ebuilds by guessing useflags and dependecies.
+</abstract>
+
+<version>1</version>
+<date>2011-08-16</date>
+
+<chapter>
+<title>Introduction</title>
+    <section>
+    <title>What problem does this project try to solve?</title>
+    <body>
+        <p>
+            When writing ebuilds it can be a hassle to hunt down dependecies for
+            the program and link them to the useflag that triggers them.
+        </p>
+        <p>
+            The point of this program is to help users write ebuilds by generating
+            the useflags, dependecies and link useflags to dependecies for them.
+            It is able to guess dependecies for packages that are not installed on the system.
+        </p>
+        <p>
+            Note that if the program that you try to generate the ebuild for is a simple
+            <i>"./configure &amp;&amp; make &amp;&amp; make install"</i> project the generated ebuild should not
+            need any edits to work
+        </p>
+    </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>How to use</title>
+    <section>
+        <title>Installation</title>
+        <body>
+
+        <p>
+            At this time the ebuild for the ebuild generator is not in portage, get it from the overlay dir on:
+            <uri>https://github.com/DarkDefender/ebuildgen</uri> .
+            After you have emerged it you should be able to run the program with the command "genebuild"
+        </p>
+
+        </body>
+    </section>
+    <section>
+        <title>Gererating an ebuild</title>
+        <body>
+            <p>
+                Lets say I want to generate an ebuild for the "moc" project (<uri>http://moc.daper.net</uri>).
+                It's svn based so I simply type the following command.
+            </p>
+                <pre caption="Generating and ebuild from svn">
+                    $ <i>genebuild --svn svn://daper.net/moc/trunk</i>
+                </pre>
+                <note>
+                    At this time the ebuild generator only supports GIT, HG and SVN
+                </note>
+            <p>
+                It will go ahead and download the source code to <path>/tmp/ebuildgen/curproj/</path>
+                and then search the project for the topmost configure.{in,ac}. Then it will use the
+                Makefile.ac in the same dir as the configure script and then scan the source files.
+            </p>
+            <p>
+                When it is done scanning source files it will try to link the includes it found in
+                the source files to packages using qfile and the pfl online database.
+            </p>
+            <impo>Make sure to double check that the dependecies that it pulls in are sane!</impo>
+            <p>
+                After the generator is done it will place the generated ebuild in 
+                <path>/tmp/ebuildgen/generated.ebuild</path>.
+                Rename and edit the ebuild to you liking, put it in your local portage and emerge away.
+            </p>
+        </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Where to go from here</title>
+    <section>
+        <title>Sanity checks</title>
+        <body>
+            <p>
+                Because the generator doesn't run anycode from the projects that it will generate an ebuild for,
+                it is likely that there will be cases where it guesses wrong dependecies.
+                There for it would be good to have a check that tells the uses if the generator pulled in any
+                obsolete packages or missed some vital ones.
+            </p>
+            <p>
+                If the "auto dependency builder" by Alexander Bersenev doesn't get included in portage I'll try
+                to implement it to solve this problem.
+                That way my ebuild generator "guesses" and the auto dependency builder confirms if the generator
+                has guessed right.
+            </p>
+        </body>
+    </section>
+    <section>
+        <title>Support for more languages and build scripts</title>
+        <body>
+            <p>
+                There is very basic support for pure makefile projects in the generator. But I've disabled it as
+                it is not good enough yet to be useful.
+            </p>
+            <p>
+                Before I start to try supporting other stuff I have to flesh out the current support that I have.
+                There is alot for missing features and/or incomplete features that needs to be done.
+            </p>
+            <p>
+                But after that I think I'll try to support scons/cmake and later perhaps python projects.
+            </p>
+        </body>
+    </section>
+    <section>
+        <title>Interested in contributing to the project?</title>
+        <body>
+            <p>
+                Please contact me with the email on this page or pm/ping me on IRC.
+                I usually hang out in #gentoo-chat on freenode by the name "DarkDefender"
+            </p>
+            <p>
+                The source code is located on github <uri>https://github.com/DarkDefender/ebuildgen</uri>
+            </p>
+        </body>
+    </section>
+</chapter>
+</guide>
+
