@@ -12,9 +12,9 @@ def cli():
             epilog="Example: genebuild --svn <url>")
 
     parser.add_argument("url")
-    parser.add_argument("-t", "--types", metavar="filetype", nargs="+",
-                        default=[".c",".cpp",".h"],
-                        help="what filetypes it should scan")
+    #parser.add_argument("-t", "--types", metavar="filetype", nargs="+",
+    #                    default=[".c",".cpp",".h"],
+    #                    help="what filetypes it should scan")
     parser.add_argument("-g", "--ginc", action="store_true",
                         help="print global includes")
     parser.add_argument("-l", "--linc", action="store_true",
